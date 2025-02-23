@@ -1,0 +1,1 @@
+docker build -t sam2-inference .

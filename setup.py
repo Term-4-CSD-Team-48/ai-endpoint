@@ -48,7 +48,8 @@ def get_extensions():
             "-D__CUDA_NO_HALF2_OPERATORS__",
         ],
     }
-    ext_modules = [CUDAExtension("sam2._C", srcs, extra_compile_args=compile_args)]
+    ext_modules = [CUDAExtension(
+        "sam2._C", srcs, extra_compile_args=compile_args)]
     return ext_modules
 
 
@@ -68,5 +69,6 @@ setup(
     extras_require=EXTRA_PACKAGES,
     python_requires=">=3.10.0",
     ext_modules=get_extensions(),
-    cmdclass={"build_ext": BuildExtension.with_options(no_python_abi_suffix=True)},
+    cmdclass={"build_ext": BuildExtension.with_options(
+        no_python_abi_suffix=True)},
 )

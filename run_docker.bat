@@ -1,0 +1,1 @@
+docker run --gpus all -it --rm sam2-inference

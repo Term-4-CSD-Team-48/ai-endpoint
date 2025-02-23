@@ -1,0 +1,7 @@
+opencv-python==4.11.0.86
+sagemaker==2.239.3
+boto3==1.36.26
+fastapi==0.115.8
+uvicorn==0.34.0
+python-multipart==0.0.20
+numpy==1.26.4
