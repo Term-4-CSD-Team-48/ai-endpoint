@@ -60,9 +60,10 @@ def main():
         if changed_points:
             changed_points = False
             response = send_frame_to_api(frame, prompt)
+            print("pROMPT SENT")
         else:
             response = send_frame_to_api(frame)
-        response = json.loads(response)
+            print('NO SENT')
 
         # Decode the base64-encoded frame from the response
         frame_base64 = response["frame"]

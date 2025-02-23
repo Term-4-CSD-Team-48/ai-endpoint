@@ -1,4 +1,3 @@
-from fastapi import FastAPI, File, UploadFile, Form
 import torch
 import numpy as np
 import cv2
@@ -6,6 +5,7 @@ from io import BytesIO
 from PIL import Image
 import base64
 import json
+from flask import Flask, request
 
 from sam2.build_sam import build_sam2_camera_predictor
 
@@ -26,21 +26,25 @@ labels = np.array([1], dtype=np.int32)
 predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 first_frame = True
 
-app = FastAPI()
+app = Flask(__name__)
 
 
-@app.get('/ping')
-async def ping():
+@app.route('/ping', methods=['GET'])
+def ping():
     return "healthy" if torch.cuda.is_available() and predictor else "unhealthy"
 
 
-@app.post('/invocations')
-async def invocations(file: UploadFile = File(...), prompt: str = Form(None)):
+@app.route('/invocations', methods=['POST'])
+def invocations():
     global first_frame
     global points
 
+    # Get request data
+    file = request.files['file']
+    prompt = request.form.get('prompt')
+
     # Read the image file
-    frame = Image.open(BytesIO(await file.read()))
+    frame = Image.open(BytesIO(file.read()))
     frame = np.array(frame)
     height, width = frame.shape[:2]
 
@@ -90,7 +94,3 @@ async def invocations(file: UploadFile = File(...), prompt: str = Form(None)):
     }
 
     return json.dumps(response)
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8080)
