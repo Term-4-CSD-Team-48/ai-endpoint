@@ -1,8 +1,5 @@
 FROM nvidia/cuda:12.6.0-cudnn-devel-ubuntu22.04
 
-# Set working directory
-WORKDIR /app
-
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0"
@@ -19,6 +16,9 @@ RUN apt-get update && apt-get install -y \
         wget \
         nginx \
         ca-certificates \
+        ffmpeg \ 
+        libsm6 \
+        libxext6 \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Create a symbolic link from python3 to python
@@ -30,13 +30,16 @@ RUN python3 -m pip install --upgrade pip
 # Install pytorch 
 RUN python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 
+# Set the working directory
+WORKDIR /app
+
 # Install dependencies (setup.py)
-COPY setup.py .
-COPY .clang-format .
-COPY README.md .
-COPY pyproject.toml .
-COPY sam2 .
-COPY checkpoints .
+COPY setup.py /app/setup.py
+COPY .clang-format /app/.clang-format
+COPY README.md /app/README.md
+COPY pyproject.toml /app/pyproject.toml
+COPY sam2 /app/sam2
+COPY checkpoints /app/checkpoints
 RUN python3 -m pip install -e .
 
 # Install dependencies (requirements.txt)
@@ -55,4 +58,7 @@ RUN mkdir -p /nginx /var/log/nginx
 # Expose port 8080
 EXPOSE 8080
 
-ENTRYPOINT ["./serve"]
+# Allow serve to work
+ENV PATH="/app:${PATH}"
+
+ENTRYPOINT ["serve"]
