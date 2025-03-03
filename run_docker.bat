@@ -1,1 +1,1 @@
-docker run --gpus all -it --rm sam2-inference
+docker run --gpus all -it --rm -p 8080:8080 -e MODEL_SERVER_WORKERS=1 sam2-inference

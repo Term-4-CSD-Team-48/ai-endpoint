@@ -19,8 +19,8 @@ if torch.cuda.get_device_properties(0).major >= 8:
 
 
 # build model
-sam2_checkpoint = "checkpoints/sam2.1_hiera_tiny.pt"
-model_cfg = "configs/sam2.1/sam2.1_hiera_t.yaml"
+sam2_checkpoint = "checkpoints/sam2.1_hiera_base_plus.pt"
+model_cfg = "configs/sam2.1/sam2.1_hiera_b+.yaml"
 points = np.array([[0, 0]], dtype=np.float32)
 labels = np.array([1], dtype=np.int32)
 predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
@@ -94,3 +94,7 @@ def invocations():
     }
 
     return json.dumps(response)
+
+
+if __name__ == '__main__':
+    app.run(port=8080)

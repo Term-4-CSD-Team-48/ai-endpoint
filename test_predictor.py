@@ -43,7 +43,11 @@ def main():
     global prompt
 
     # Open a connection to the webcam
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("IMG_4227.mov")
+    w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH,
+                                           cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
+    out = cv2.VideoWriter("sam2.1.avi",
+                          cv2.VideoWriter_fourcc(*"MJPG"), fps, (w, h))
 
     if not cap.isOpened():
         print("Error: Could not open webcam.")
@@ -82,9 +86,12 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+        out.write(frame)
+
     # Release the webcam and close the window
     cap.release()
     cv2.destroyAllWindows()
+    out.release()
 
 
 if __name__ == "__main__":
