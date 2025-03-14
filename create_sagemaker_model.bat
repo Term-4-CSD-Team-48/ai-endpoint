@@ -1,1 +1,0 @@
-aws sagemaker create-model --model-name my-sagemaker-model --primary-container Image=public.ecr.aws/l1g2c1s4/50.001:latest --execution-role-arn arn:aws:iam::855805341914:role/service-role/AmazonSageMaker-ExecutionRole-20250222T235139
