@@ -172,13 +172,14 @@ def create_app():
 
                 # Use FFMPEG to write the .ts file
                 # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
+                fps = new_segment_length/segment_duration
                 if ffmpeg_process is None:
                     command = [
                         'ffmpeg',
                         '-y',  # Overwrite output file without asking
                         '-f', 'image2pipe',
                         '-vcodec', 'mjpeg',
-                        # '-r', '30',
+                        '-framerate', str(fps),  # Set dynamic frame rate
                         '-i', '-',  # Input comes from stdin
                         '-c:v', 'libx264',  # Use H.264 codec
                         '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
