@@ -94,7 +94,7 @@ def create_app():
         # Reset .m3u8
         with open(M3U8_FILE, "w") as f:
             f.write(
-                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST\n")
+                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
         print("Resetted .m3u8 file")
         # Delete all .ts files
         count = 0
@@ -132,7 +132,7 @@ def create_app():
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
                 file.write(
-                    f"#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-DISCONTINUITY\n#EXT-X-ENDLIST\n"
+                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-DISCONTINUITY\n#EXT-X-ENDLIST"
                 )
         print("Updated m3u8")
 
