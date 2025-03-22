@@ -73,6 +73,7 @@ def create_app():
                     print(
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
                     break
+                print("Obtained current_frame")
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
@@ -146,6 +147,7 @@ def create_app():
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
+                print("Converting segment to ts " + segment_duration + "s")
                 # Output file name and path
                 output_filename = f"segment_{segment_filename_idx}.ts"
                 segment_filename_idx += 1
