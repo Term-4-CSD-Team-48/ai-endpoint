@@ -32,21 +32,19 @@ labels = np.array([1], dtype=np.int32)
 predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 first_frame = True
 
-# Frames for hls
-frame_queue = Queue()
+
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
-
-# Maintain a list of segments
-segment_list = []
-max_segments = 5  # Keep only the last 5 segments to prevent storage overflow
+EXT_X_TARGETDURATION = 6
+segment = []
+threshold_segment_duration = EXT_X_TARGETDURATION - 2
 
 
 def create_app():
     app = Flask(__name__)
 
-    def get_frames():
-        global frame_queue
+    def get_and_process_frames():
+        global segment
         while True:
             print("Connecting to RTMP server...")
             cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
@@ -56,99 +54,140 @@ def create_app():
                 time.sleep(5)  # Wait before retrying
                 continue
 
+            # Initialize
             print("Connected to RTMP server!")
-            init_m3u8()
+            reset_m3u8()
+            ret, previous_frame = cap.read()
+            t0 = time.time()  # Start time of segment
+            t1 = t0  # Start time of previous_frame
+            if not ret:
+                raise Exception("Failed to get first frame!")
+            else:
+                print("Finished first frame read")
+
             while True:
-                ret, frame = cap.read()
+                ret, current_frame = cap.read()
+                t2 = time.time()  # End time of previous_frame / Start time of frame / Start time of next segment
+                t1 = t2
                 if not ret:
                     print(
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
                     break
-
-                # Convert frame to NumPy array (it already is, but this ensures compatibility)
-                frame_array = np.array(frame)
-                frame_queue.put(frame_array)
+                _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                previous_frame = previous_frame.tobytes()
+                segment.append((previous_frame, t2 - t1))
+                previous_frame = current_frame
 
             cap.release()
-            cv2.destroyAllWindows()
             time.sleep(3)
 
-    def init_m3u8():
-        print("Initializing .m3u8 playlist...")
+    def reset_m3u8():
+        print("Resetting .m3u8 playlist...")
+        # Reset .m3u8
         with open(M3U8_FILE, "w") as f:
-            f.write("#EXTM3U\n")
-            f.write("#EXT-X-VERSION:3\n")
-            f.write("#EXT-X-TARGETDURATION:4\n")  # Approximate segment length
-            f.write("#EXT-X-MEDIA-SEQUENCE:{}\n".format(len(segment_list) -
-                    max_segments if len(segment_list) > max_segments else 0))
-
-            for segment in segment_list[-max_segments:]:
-                f.write("#EXTINF:4.0,\n")
-                f.write(f"{segment}\n")
-        # Get a list of all files in the HLS_DIR directory
+            f.write(
+                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
+        print("Resetted .m3u8 file")
+        # Delete all .ts files
         for filename in os.listdir(HLS_DIR):
-            # Check if the file ends with .ts extension
             if filename.endswith(".ts"):
                 file_path = os.path.join(HLS_DIR, filename)
+                count = 0
                 try:
-                    # Remove the .ts file
                     os.remove(file_path)
-                    print(f"Removed {file_path}")
+                    count = count + 1
                 except Exception as e:
                     print(f"Error removing {file_path}: {e}")
+        print(f"Remove {count} .ts files")
 
-    def update_m3u8(filename: str):
+    def update_m3u8(filename: str, segment_duration):
         print("Updating m3u8")
-        with open(M3U8_FILE, "a") as f:  # Change to 'a' to append
-            # Add new segment info to the playlist
-            f.write("#EXTINF:4.0,\n")
-            f.write(f"{filename}\n")  # Only add the last segment for each update
+        with open(M3U8_FILE, "r+") as file:
+            # Move the pointer (similar to a cursor in a text editor) to the end of the file
+            file.seek(0, os.SEEK_END)
 
-    def process_frames():
-        global first_frame
-        global points
+            # This code means the following code skips the very last character in the file -
+            # i.e. in the case the last line is null we delete the last line
+            # and the penultimate one
+            pos = file.tell() - 1
+
+            # Read each character in the file one at a time from the penultimate
+            # character going backwards, searching for a newline character
+            # If we find a new line, exit the search
+            while pos > 0 and file.read(1) != "\n":
+                pos -= 1
+                file.seek(pos, os.SEEK_SET)
+
+            # So long as we're not at the start of the file, delete all the characters ahead
+            # of this position
+            if pos > 0:
+                file.seek(pos, os.SEEK_SET)
+                file.truncate()
+                file.write(
+                    f"#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-DISCONTINUITY\n#EXT-X-ENDLIST"
+                )
+        print("Updated m3u8")
+
+    def segment_to_ts():
+        global segment
+        global threshold_segment_duration
+        segment_filename_idx = 0
+        old_segment_length = 0
+        segment_duration = 0
+        ffmpeg_process = None
         while True:
-            if not frame_queue.empty():
-                frame = frame_queue.get()
+            new_segment_length = len(segment)
+            if new_segment_length != old_segment_length:
+                difference = new_segment_length - old_segment_length
+                for i in range(old_segment_length, new_segment_length, difference):
+                    segment_duration = segment_duration + segment[i][1]
+            else:
+                continue
 
-                # Generate a unique filename
-                timestamp = int(time.time() * 1000)
-                output_filename = f"frame_{timestamp}.ts"
+            # Convert segment to ts file once enough time has lapsed
+            if segment_duration >= threshold_segment_duration:
+                # Output file name and path
+                output_filename = f"segment_{segment_filename_idx}.ts"
+                segment_filename_idx += 1
                 output_path = os.path.join(HLS_DIR, output_filename)
 
                 # Use FFMPEG to write the .ts file
                 # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
-                command = [
-                    'ffmpeg',
-                    '-y',  # Overwrite output file without asking
-                    '-f', 'rawvideo',
-                    '-vcodec', 'rawvideo',
-                    '-pix_fmt', 'bgr24',  # OpenCV uses BGR format by default
-                    '-s', f'{frame.shape[1]}x{frame.shape[0]}',  # width x height
-                    '-r', '30',  # 30 FPS
-                    '-i', '-',  # Input comes from stdin
-                    '-c:v', 'libx264',  # Use H.264 codec
-                    '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
-                    '-f', 'mpegts',  # Output format .ts
-                    output_path
-                ]
+                if ffmpeg_process is None:
+                    command = [
+                        'ffmpeg',
+                        '-y',  # Overwrite output file without asking
+                        '-f', 'image2pipe',
+                        '-vcodec', 'mjpeg',
+                        '-r', '30',
+                        '-i', '-',  # Input comes from stdin
+                        '-c:v', 'libx264',  # Use H.264 codec
+                        '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
+                        '-vsync', 'vfr',  # Allow variable frame rate
+                        '-f', 'mpegts',  # Output format .ts
+                        output_path
+                    ]
+                    ffmpeg_process = subprocess.Popen(command, stdin=subprocess.PIPE)
 
-                # Start the ffmpeg process
-                process = subprocess.Popen(command, stdin=subprocess.PIPE)
-
-                # Write frame to stdin of ffmpeg process
-                process.stdin.write(frame.tobytes())
-                process.stdin.close()
-                process.wait()
+                # Write each frame in the batch to ffmpeg's stdin and create the ts file
+                for frame_bytes, _ in segment:
+                    ffmpeg_process.stdin.write(frame_bytes)
+                    ffmpeg_process.stdin.flush()
+                ffmpeg_process.stdin.close()
+                ffmpeg_process.wait()
 
                 # Update .m3u8 playlist
-                update_m3u8(output_filename)
-                print(f"Processed and saved frame to {output_path}")
-            time.sleep(0.03333333333)  # 30 FPS
+                update_m3u8(output_filename, segment_duration)
 
-    model_thread = threading.Thread(target=get_frames, daemon=True)
+                # Post-op cleanup
+                segment.clear()
+                old_segment_length = 0
+                segment_duration = 0
+                ffmpeg_process = None
+
+    model_thread = threading.Thread(target=get_and_process_frames, daemon=True)
     model_thread.start()
-    processing_thread = threading.Thread(target=process_frames, daemon=True)
+    processing_thread = threading.Thread(target=segment_to_ts, daemon=True)
     processing_thread.start()
     return app
 
