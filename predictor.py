@@ -89,10 +89,10 @@ def create_app():
                 f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
         print("Resetted .m3u8 file")
         # Delete all .ts files
+        count = 0
         for filename in os.listdir(HLS_DIR):
             if filename.endswith(".ts"):
                 file_path = os.path.join(HLS_DIR, filename)
-                count = 0
                 try:
                     os.remove(file_path)
                     count = count + 1
