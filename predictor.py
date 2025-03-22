@@ -137,8 +137,6 @@ def create_app():
 
     def segment_to_ts():
         global connected_to_RTMP_server
-        if not connected_to_RTMP_server:
-            time.sleep(1)
         global segment
         global threshold_segment_duration
         segment_filename_idx = 0
@@ -147,6 +145,10 @@ def create_app():
         ffmpeg_process = None
         print("segment_to_ts thread initialized")
         while True:
+            if not connected_to_RTMP_server:
+                print("segment_to_ts_thread going to sleep now for 1s")
+                time.sleep(1)
+                continue
             print("Checking if segment duration exceeds threshold")
             new_segment_length = len(segment)
             if new_segment_length != old_segment_length:
