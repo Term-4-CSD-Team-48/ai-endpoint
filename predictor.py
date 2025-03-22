@@ -57,7 +57,7 @@ def create_app():
                 continue
 
             print("Connected to RTMP server!")
-
+            init_m3u8()
             while True:
                 ret, frame = cap.read()
                 if not ret:
@@ -73,8 +73,8 @@ def create_app():
             cv2.destroyAllWindows()
             time.sleep(3)
 
-    def update_m3u8():
-        print("Updating .m3u8 playlist...")
+    def init_m3u8():
+        print("Initializing .m3u8 playlist...")
         with open(M3U8_FILE, "w") as f:
             f.write("#EXTM3U\n")
             f.write("#EXT-X-VERSION:3\n")
@@ -85,6 +85,24 @@ def create_app():
             for segment in segment_list[-max_segments:]:
                 f.write("#EXTINF:4.0,\n")
                 f.write(f"{segment}\n")
+        # Get a list of all files in the HLS_DIR directory
+        for filename in os.listdir(HLS_DIR):
+            # Check if the file ends with .ts extension
+            if filename.endswith(".ts"):
+                file_path = os.path.join(HLS_DIR, filename)
+                try:
+                    # Remove the .ts file
+                    os.remove(file_path)
+                    print(f"Removed {file_path}")
+                except Exception as e:
+                    print(f"Error removing {file_path}: {e}")
+
+    def update_m3u8(filename: str):
+        print("Updating m3u8")
+        with open(M3U8_FILE, "a") as f:  # Change to 'a' to append
+            # Add new segment info to the playlist
+            f.write("#EXTINF:4.0,\n")
+            f.write(f"{filename}\n")  # Only add the last segment for each update
 
     def process_frames():
         global first_frame
@@ -123,15 +141,8 @@ def create_app():
                 process.stdin.close()
                 process.wait()
 
-                # Update segment list and remove old segments
-                segment_list.append(output_filename)
-                if len(segment_list) > max_segments:
-                    old_segment = segment_list.pop(0)
-                    # Delete old .ts file
-                    os.remove(os.path.join(HLS_DIR, old_segment))
-
                 # Update .m3u8 playlist
-                update_m3u8()
+                update_m3u8(output_filename)
                 print(f"Processed and saved frame to {output_path}")
             time.sleep(0.03333333333)  # 30 FPS
 
