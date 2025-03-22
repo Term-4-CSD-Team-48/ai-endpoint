@@ -4,6 +4,7 @@ import threading
 import cv2
 from io import BytesIO
 from PIL import Image
+import subprocess
 import base64
 import json
 import atexit
@@ -97,12 +98,30 @@ def create_app():
                 output_filename = f"frame_{timestamp}.ts"
                 output_path = os.path.join(HLS_DIR, output_filename)
 
-                # Encode as a short .ts segment (simulating HLS chunk)
-                fourcc = cv2.VideoWriter_fourcc(*'H264')
-                out = cv2.VideoWriter(output_path, fourcc,
-                                      30.0, (frame.shape[1], frame.shape[0]))
-                out.write(frame)
-                out.release()
+                # Use FFMPEG to write the .ts file
+                # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
+                command = [
+                    'ffmpeg',
+                    '-y',  # Overwrite output file without asking
+                    '-f', 'rawvideo',
+                    '-vcodec', 'rawvideo',
+                    '-pix_fmt', 'bgr24',  # OpenCV uses BGR format by default
+                    '-s', f'{frame.shape[1]}x{frame.shape[0]}',  # width x height
+                    '-r', '30',  # 30 FPS
+                    '-i', '-',  # Input comes from stdin
+                    '-c:v', 'libx264',  # Use H.264 codec
+                    '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
+                    '-f', 'mpegts',  # Output format .ts
+                    output_path
+                ]
+
+                # Start the ffmpeg process
+                process = subprocess.Popen(command, stdin=subprocess.PIPE)
+
+                # Write frame to stdin of ffmpeg process
+                process.stdin.write(frame.tobytes())
+                process.stdin.close()
+                process.wait()
 
                 # Update segment list and remove old segments
                 segment_list.append(output_filename)
