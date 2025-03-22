@@ -22,7 +22,7 @@ import sys
 cpu_count = multiprocessing.cpu_count()
 
 model_server_timeout = os.environ.get('MODEL_SERVER_TIMEOUT', 60)
-model_server_workers = int(os.environ.get('MODEL_SERVER_WORKERS', cpu_count))
+model_server_workers = int(os.environ.get('MODEL_SERVER_WORKERS', 1))
 
 
 def sigterm_handler(nginx_pid, gunicorn_pid):
@@ -43,7 +43,7 @@ def start_server():
         model_server_workers))
 
     nginx = subprocess.Popen(['nginx', '-c', 'nginx.conf'])
-    gunicorn = subprocess.Popen(['gunicorn',
+    gunicorn = subprocess.Popen(['/home/ubuntu/ai-endpoint/.venv/bin/gunicorn',
                                  '--timeout', str(model_server_timeout),
                                  '-k', 'sync',
                                  '-b', 'unix:/tmp/gunicorn.sock',
