@@ -132,7 +132,7 @@ def create_app():
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
                 file.write(
-                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-DISCONTINUITY\n#EXT-X-ENDLIST"
+                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-ENDLIST"
                 )
         print("Updated m3u8")
 
