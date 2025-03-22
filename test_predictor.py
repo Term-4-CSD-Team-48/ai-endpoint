@@ -5,7 +5,7 @@ import numpy as np
 import json
 
 # Define the URL of the FastAPI endpoint
-url = "http://127.0.0.1:8080/invocations"
+url = "http://54.179.223.74:8080/invocations"
 
 
 def send_frame_to_api(frame, prompt=None):
