@@ -145,6 +145,7 @@ def create_app():
                 difference = new_segment_length - old_segment_length
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
+                old_segment_length = new_segment_length
                 print(f"Segment duration is at {segment_duration}s")
             else:
                 time.sleep(0.03333333333)  # 30 fps
