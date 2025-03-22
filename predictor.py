@@ -81,6 +81,7 @@ def create_app():
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
+                print(segment[-1][1])
                 previous_frame = current_frame
                 t1 = t2
                 time.sleep(0.33333333333)  # 30 fps
@@ -155,7 +156,6 @@ def create_app():
                 difference = new_segment_length - old_segment_length
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
-                    print(segment[1][i])
                 old_segment_length = new_segment_length
                 print(f"Segment duration is at {segment_duration}s with new segment length at {new_segment_length}")
             else:
