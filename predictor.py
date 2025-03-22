@@ -148,6 +148,7 @@ def create_app():
                 old_segment_length = new_segment_length
                 print(f"Segment duration is at {segment_duration}s")
             else:
+                print(f"new_segment_length: {new_segment_length}, old_segment_length: {old_segment_length}")
                 time.sleep(0.03333333333)  # 30 fps
                 continue
 
