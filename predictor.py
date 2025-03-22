@@ -38,23 +38,27 @@ M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 EXT_X_TARGETDURATION = 6
 segment = []
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
+connected_to_RTMP_server = False
 
 
 def create_app():
     app = Flask(__name__)
 
     def get_and_process_frames():
+        global connected_to_RTMP_server
         global segment
         while True:
             print("Connecting to RTMP server...")
             cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
 
             if not cap.isOpened():
+                connected_to_RTMP_server = False
                 print("Error: Cannot open RTMP stream. Retrying in 5 seconds")
                 time.sleep(5)  # Wait before retrying
                 continue
 
             # Initialize
+            connected_to_RTMP_server = True
             print("Connected to RTMP server!")
             reset_m3u8()
             ret, previous_frame = cap.read()
@@ -72,6 +76,7 @@ def create_app():
                 if not ret:
                     print(
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
+                    connected_to_RTMP_server = False
                     break
                 print("Obtained current_frame")
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -131,6 +136,9 @@ def create_app():
         print("Updated m3u8")
 
     def segment_to_ts():
+        global connected_to_RTMP_server
+        if not connected_to_RTMP_server:
+            time.sleep(1)
         global segment
         global threshold_segment_duration
         segment_filename_idx = 0
@@ -150,7 +158,7 @@ def create_app():
             else:
                 print(f"new_segment_length: {new_segment_length}, old_segment_length: {old_segment_length}")
                 time.sleep(0.33333333333)  # 30 fps
-                continue
+            time.sleep(0.33333333333)  # 30 fps
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
@@ -194,10 +202,10 @@ def create_app():
                 segment_duration = 0
                 ffmpeg_process = None
 
-    model_thread = threading.Thread(target=get_and_process_frames, daemon=True)
-    model_thread.start()
-    processing_thread = threading.Thread(target=segment_to_ts, daemon=True)
-    processing_thread.start()
+    get_and_process_frames_thread = threading.Thread(target=get_and_process_frames, daemon=True)
+    get_and_process_frames_thread.start()
+    segment_to_ts_thread = threading.Thread(target=segment_to_ts, daemon=True)
+    segment_to_ts_thread.start()
     return app
 
 
