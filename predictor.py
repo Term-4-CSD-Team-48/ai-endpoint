@@ -137,8 +137,9 @@ def create_app():
         old_segment_length = 0
         segment_duration = 0
         ffmpeg_process = None
-        print("Checking if segment duration exceeds threshold")
+        print("segment_to_ts thread initialized")
         while True:
+            print("Checking if segment duration exceeds threshold")
             new_segment_length = len(segment)
             if new_segment_length != old_segment_length:
                 difference = new_segment_length - old_segment_length
