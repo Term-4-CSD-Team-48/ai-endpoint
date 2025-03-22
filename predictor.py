@@ -164,7 +164,7 @@ def create_app():
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
-                print("Converting segment to ts " + segment_duration + "s")
+                print(f"Converting segment to ts {segment_duration}s")
                 # Output file name and path
                 output_filename = f"segment_{segment_filename_idx}.ts"
                 segment_filename_idx += 1
