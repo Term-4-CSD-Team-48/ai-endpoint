@@ -1,11 +1,15 @@
 import torch
 import numpy as np
+import threading
 import cv2
 from io import BytesIO
 from PIL import Image
 import base64
 import json
 from flask import Flask, request
+import os
+import time
+from queue import Queue
 
 from sam2.build_sam import build_sam2_camera_predictor
 
@@ -27,6 +31,82 @@ predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 first_frame = True
 
 app = Flask(__name__)
+
+frame_queue = Queue()
+HLS_DIR = "/mnt/hls"
+M3U8_FILE = os.path.join(HLS_DIR, "playlist.m3u8")
+
+# Maintain a list of segments
+segment_list = []
+max_segments = 5  # Keep only the last 5 segments to prevent storage overflow
+
+
+def get_frames():
+    while True:
+        cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
+
+        if not cap.isOpened():
+            print("Error: Cannot open RTMP stream. Retrying in 5 seconds")
+            time.sleep(5)  # Wait before retrying
+            continue
+
+        print("Connected to RTMP server!")
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
+                break
+
+            # Convert frame to NumPy array (it already is, but this ensures compatibility)
+            frame_array = np.array(frame)
+            frame_queue.put(frame_array)
+
+        cap.release()
+        cv2.destroyAllWindows()
+        time.sleep(3)
+
+
+def update_m3u8():
+    with open(M3U8_FILE, "w") as f:
+        f.write("#EXTM3U\n")
+        f.write("#EXT-X-VERSION:3\n")
+        f.write("#EXT-X-TARGETDURATION:4\n")  # Approximate segment length
+        f.write("#EXT-X-MEDIA-SEQUENCE:{}\n".format(len(segment_list) -
+                max_segments if len(segment_list) > max_segments else 0))
+
+        for segment in segment_list[-max_segments:]:
+            f.write("#EXTINF:4.0,\n")
+            f.write(f"{segment}\n")
+
+
+def process_frames():
+    global first_frame
+    global points
+    while True:
+        if not frame_queue.empty():
+            frame = frame_queue.get()
+
+            # Generate a unique filename
+            timestamp = int(time.time() * 1000)
+            output_filename = f"frame_{timestamp}.ts"
+            output_path = os.path.join(HLS_DIR, output_filename)
+
+            # Encode as a short .ts segment (simulating HLS chunk)
+            fourcc = cv2.VideoWriter_fourcc(*'H264')
+            out = cv2.VideoWriter(output_path, fourcc, 30.0, (frame.shape[1], frame.shape[0]))
+            out.write(frame)
+            out.release()
+
+            # Update segment list and remove old segments
+            segment_list.append(output_filename)
+            if len(segment_list) > max_segments:
+                old_segment = segment_list.pop(0)
+                os.remove(os.path.join(HLS_DIR, old_segment))  # Delete old .ts file
+
+            # Update .m3u8 playlist
+            update_m3u8()
+            print(f"Processed and saved frame to {output_path}")
 
 
 @app.route('/ping', methods=['GET'])
@@ -97,4 +177,6 @@ def invocations():
 
 
 if __name__ == '__main__':
+    model_thread = threading.Thread(target=get_frames, daemon=True)
+    processing_thread = threading.Thread(target=process_frames, daemon=True)
     app.run(port=8080)

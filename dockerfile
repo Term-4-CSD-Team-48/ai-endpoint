@@ -7,6 +7,7 @@ ENV PYTHONUNBUFFERED=TRUE
 
 # Install dependencies and Python 3.10.6
 RUN apt-get update && apt-get install -y \
+        libnginx-mod-rtmp \        
         python3 \
         python3-pip \         
         build-essential \
@@ -55,8 +56,8 @@ COPY wsgi.py .
 # Create necessary directories
 RUN mkdir -p /nginx /var/log/nginx
 
-# Expose port 8080
-EXPOSE 8080
+# Expose ports
+EXPOSE 8080 1935
 
 # Allow serve to work
 ENV PATH="/app:${PATH}"
