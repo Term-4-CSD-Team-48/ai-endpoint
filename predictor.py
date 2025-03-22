@@ -156,10 +156,10 @@ def create_app():
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
                 old_segment_length = new_segment_length
-                print(f"Segment duration is at {segment_duration}s")
+                print(segment)
+                print(f"Segment duration is at {segment_duration}s with new segment length at {new_segment_length}")
             else:
                 print(f"new_segment_length: {new_segment_length}, old_segment_length: {old_segment_length}")
-                time.sleep(0.33333333333)  # 30 fps
             time.sleep(0.33333333333)  # 30 fps
 
             # Convert segment to ts file once enough time has lapsed
