@@ -178,7 +178,7 @@ def create_app():
                         '-y',  # Overwrite output file without asking
                         '-f', 'image2pipe',
                         '-vcodec', 'mjpeg',
-                        '-r', '30',
+                        # '-r', '30',
                         '-i', '-',  # Input comes from stdin
                         '-c:v', 'libx264',  # Use H.264 codec
                         '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
@@ -192,7 +192,6 @@ def create_app():
                 for frame_bytes, duration in segment:
                     ffmpeg_process.stdin.write(frame_bytes)
                     ffmpeg_process.stdin.flush()
-                    time.sleep(duration)
                 ffmpeg_process.stdin.close()
                 ffmpeg_process.wait()
 
