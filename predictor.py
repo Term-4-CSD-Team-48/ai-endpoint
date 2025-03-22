@@ -137,6 +137,7 @@ def create_app():
         old_segment_length = 0
         segment_duration = 0
         ffmpeg_process = None
+        print("Checking if segment duration exceeds threshold")
         while True:
             new_segment_length = len(segment)
             if new_segment_length != old_segment_length:
