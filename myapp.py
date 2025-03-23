@@ -132,6 +132,7 @@ def create_app():
                     cv2.circle(current_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
 
                 # Turn previous_frame to bytes for ffmpeg processing
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
@@ -168,6 +169,8 @@ def create_app():
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
+                print(
+                    f"Segment duration at {segment_duration} has exceeded {threshold_segment_duration} with length {new_segment_length}")
                 # Output file name and path
                 output_filename = f"segment_{segment_filename_idx}.ts"
                 segment_filename_idx += 1
