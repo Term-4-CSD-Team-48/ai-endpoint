@@ -1,3 +1,4 @@
+# IMPORANT: THE DOCKER FILE DOESN'T WORK IT NEEDS TO BE FIXED
 FROM nvidia/cuda:12.6.0-cudnn-devel-ubuntu22.04
 
 # Set environment variables
