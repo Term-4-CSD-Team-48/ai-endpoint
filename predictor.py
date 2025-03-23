@@ -44,6 +44,25 @@ connected_to_RTMP_server = False
 def create_app():
     app = Flask(__name__)
 
+    def reset_m3u8():
+        print("Resetting .m3u8 playlist...")
+        # Reset .m3u8
+        with open(M3U8_FILE, "w") as f:
+            f.write(
+                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
+        print("Resetted .m3u8 file")
+        # Delete all .ts files
+        count = 0
+        for filename in os.listdir(HLS_DIR):
+            if filename.endswith(".ts"):
+                file_path = os.path.join(HLS_DIR, filename)
+                try:
+                    os.remove(file_path)
+                    count = count + 1
+                except Exception as e:
+                    print(f"Error removing {file_path}: {e}")
+        print(f"Remove {count} .ts files")
+
     def get_and_process_frames():
         global connected_to_RTMP_server
         global segment
@@ -88,53 +107,6 @@ def create_app():
 
             cap.release()
             time.sleep(3)
-
-    def reset_m3u8():
-        print("Resetting .m3u8 playlist...")
-        # Reset .m3u8
-        with open(M3U8_FILE, "w") as f:
-            f.write(
-                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
-        print("Resetted .m3u8 file")
-        # Delete all .ts files
-        count = 0
-        for filename in os.listdir(HLS_DIR):
-            if filename.endswith(".ts"):
-                file_path = os.path.join(HLS_DIR, filename)
-                try:
-                    os.remove(file_path)
-                    count = count + 1
-                except Exception as e:
-                    print(f"Error removing {file_path}: {e}")
-        print(f"Remove {count} .ts files")
-
-    def update_m3u8(filename: str, segment_duration):
-        print("Updating m3u8")
-        with open(M3U8_FILE, "r+") as file:
-            # Move the pointer (similar to a cursor in a text editor) to the end of the file
-            file.seek(0, os.SEEK_END)
-
-            # This code means the following code skips the very last character in the file -
-            # i.e. in the case the last line is null we delete the last line
-            # and the penultimate one
-            pos = file.tell() - 1
-
-            # Read each character in the file one at a time from the penultimate
-            # character going backwards, searching for a newline character
-            # If we find a new line, exit the search
-            while pos > 0 and file.read(1) != "\n":
-                pos -= 1
-                file.seek(pos, os.SEEK_SET)
-
-            # So long as we're not at the start of the file, delete all the characters ahead
-            # of this position
-            if pos > 0:
-                file.seek(pos, os.SEEK_SET)
-                file.truncate()
-                file.write(
-                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-ENDLIST"
-                )
-        print("Updated m3u8")
 
     def segment_to_ts():
         global connected_to_RTMP_server
@@ -204,6 +176,34 @@ def create_app():
                 old_segment_length = 0
                 segment_duration = 0
                 ffmpeg_process = None
+
+    def update_m3u8(filename: str, segment_duration):
+        print("Updating m3u8")
+        with open(M3U8_FILE, "r+") as file:
+            # Move the pointer (similar to a cursor in a text editor) to the end of the file
+            file.seek(0, os.SEEK_END)
+
+            # This code means the following code skips the very last character in the file -
+            # i.e. in the case the last line is null we delete the last line
+            # and the penultimate one
+            pos = file.tell() - 1
+
+            # Read each character in the file one at a time from the penultimate
+            # character going backwards, searching for a newline character
+            # If we find a new line, exit the search
+            while pos > 0 and file.read(1) != "\n":
+                pos -= 1
+                file.seek(pos, os.SEEK_SET)
+
+            # So long as we're not at the start of the file, delete all the characters ahead
+            # of this position
+            if pos > 0:
+                file.seek(pos, os.SEEK_SET)
+                file.truncate()
+                file.write(
+                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-ENDLIST"
+                )
+        print("Updated m3u8")
 
     get_and_process_frames_thread = threading.Thread(target=get_and_process_frames, daemon=True)
     get_and_process_frames_thread.start()
