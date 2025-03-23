@@ -31,7 +31,8 @@ points = np.array([[0, 0]], dtype=np.float32)
 labels = np.array([1], dtype=np.int32)
 predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 first_frame = True
-
+width = 640
+height = 360
 
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
@@ -65,7 +66,11 @@ def create_app():
 
     def get_and_process_frames():
         global connected_to_RTMP_server
+        global points
+        global predictor
         global segment
+        global width
+        global height
         while True:
             print("Connecting to RTMP server...")
             cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
@@ -80,26 +85,59 @@ def create_app():
             connected_to_RTMP_server = True
             print("Connected to RTMP server!")
             reset_m3u8()
-            ret, previous_frame = cap.read()
-            t1 = time.time()
+            ret, previous_frame = cap.read()  # previous_frame is an np.array
+            t1 = time.time()  # Start time of previous_frame
             if not ret:
                 raise Exception("Failed to get first frame!")
-            else:
-                print("Finished first frame read")
+
+            # Sam processes first frame and draw mask and point on it
+            height, width = previous_frame.shape[:2]
+            predictor.load_first_frame(previous_frame)
+            _, out_obj_ids, out_mask_logits = predictor.add_new_prompt(
+                frame_idx=0, obj_id=1, points=points, labels=labels
+            )
+            all_mask = np.zeros((height, width, 1), dtype=np.uint8)
+            for i in range(0, len(out_obj_ids)):
+                out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(
+                    np.uint8
+                ) * 255
+                all_mask = cv2.bitwise_or(all_mask, out_mask)
+            all_mask = cv2.cvtColor(all_mask, cv2.COLOR_GRAY2RGB)
+            previous_frame = cv2.addWeighted(previous_frame, 1, all_mask, 0.5, 0)
+            for point in points:
+                cv2.circle(previous_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
 
             while True:
                 ret, current_frame = cap.read()
-                t2 = time.time()  # End time of previous_frame / Start time of frame / Start time of next segment
+                t2 = time.time()  # End time of previous_frame / Start time of current_frame
                 if not ret:
                     print(
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
                     connected_to_RTMP_server = False
                     break
+
+                # Process current_frame with SAM and draw mask and point on it
                 print("Obtained current_frame and processing it with SAM")
+                out_obj_ids, out_mask_logits = predictor.track(current_frame)
+                all_mask = np.zeros((height, width, 1), dtype=np.uint8)
+                for i in range(0, len(out_obj_ids)):
+                    out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(
+                        np.uint8
+                    ) * 255
+                    all_mask = cv2.bitwise_or(all_mask, out_mask)
+                all_mask = cv2.cvtColor(all_mask, cv2.COLOR_GRAY2RGB)
+                current_frame = cv2.addWeighted(current_frame, 1, all_mask, 0.5, 0)
+                for point in points:
+                    cv2.circle(current_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
+
+                # Turn previous_frame to bytes for ffmpeg processing
+                print("Image processing of previous_frame")
+                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
-                print(segment[-1][1])
+
+                # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
                 time.sleep(0.33333333333)  # 30 fps
