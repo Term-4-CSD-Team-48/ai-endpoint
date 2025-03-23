@@ -81,8 +81,7 @@ def create_app():
             print("Connected to RTMP server!")
             reset_m3u8()
             ret, previous_frame = cap.read()
-            t0 = time.time()  # Start time of segment
-            t1 = t0  # Start time of previous_frame
+            t1 = time.time()
             if not ret:
                 raise Exception("Failed to get first frame!")
             else:
@@ -96,7 +95,7 @@ def create_app():
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
                     connected_to_RTMP_server = False
                     break
-                print("Obtained current_frame")
+                print("Obtained current_frame and processing it with SAM")
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
