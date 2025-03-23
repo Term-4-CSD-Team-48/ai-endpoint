@@ -1,1 +1,0 @@
-docker run --gpus all -it --rm -p 8080:8080 -e MODEL_SERVER_WORKERS=1 public.ecr.aws/l1g2c1s4/50.001:latest
