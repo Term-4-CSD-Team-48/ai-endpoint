@@ -46,7 +46,6 @@ def create_app():
     app = Flask(__name__)
 
     def reset_m3u8():
-        print("Resetting .m3u8 playlist...")
         # Reset .m3u8
         with open(M3U8_FILE, "w") as f:
             f.write(
@@ -92,6 +91,8 @@ def create_app():
 
             # Sam processes first frame and draw mask and point on it
             height, width = previous_frame.shape[:2]
+            print(f"Width: {width}, Height: {height}")
+            previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
             predictor.load_first_frame(previous_frame)
             _, out_obj_ids, out_mask_logits = predictor.add_new_prompt(
                 frame_idx=0, obj_id=1, points=points, labels=labels
@@ -117,7 +118,7 @@ def create_app():
                     break
 
                 # Process current_frame with SAM and draw mask and point on it
-                print("Obtained current_frame and processing it with SAM")
+                current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
                 out_obj_ids, out_mask_logits = predictor.track(current_frame)
                 all_mask = np.zeros((height, width, 1), dtype=np.uint8)
                 for i in range(0, len(out_obj_ids)):
@@ -131,8 +132,6 @@ def create_app():
                     cv2.circle(current_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                print("Image processing of previous_frame")
-                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
@@ -156,24 +155,19 @@ def create_app():
         print("segment_to_ts thread initialized")
         while True:
             if not connected_to_RTMP_server:
-                print("segment_to_ts_thread going to sleep now for 1s")
+                print("segment_to_ts_thread going to sleep now for 1s as not connected to RTMP server")
                 time.sleep(1)
                 continue
-            print("Checking if segment duration exceeds threshold")
             new_segment_length = len(segment)
             if new_segment_length != old_segment_length:
                 difference = new_segment_length - old_segment_length
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
                 old_segment_length = new_segment_length
-                print(f"Segment duration is at {segment_duration}s with new segment length at {new_segment_length}")
-            else:
-                print(f"new_segment_length: {new_segment_length}, old_segment_length: {old_segment_length}")
             time.sleep(0.033333333333)  # 30 fps
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
-                print(f"Converting segment to ts {segment_duration}s")
                 # Output file name and path
                 output_filename = f"segment_{segment_filename_idx}.ts"
                 segment_filename_idx += 1
@@ -215,7 +209,6 @@ def create_app():
                 ffmpeg_process = None
 
     def update_m3u8(filename: str, segment_duration):
-        print("Updating m3u8")
         with open(M3U8_FILE, "r+") as file:
             # Move the pointer (similar to a cursor in a text editor) to the end of the file
             file.seek(0, os.SEEK_END)
