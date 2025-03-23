@@ -132,7 +132,7 @@ def create_app():
                     cv2.circle(current_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
