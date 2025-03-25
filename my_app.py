@@ -13,6 +13,7 @@ import os
 import time
 from queue import Queue
 
+from sam_tracker import SamTracker
 from sam2.build_sam import build_sam2_camera_predictor
 
 # use bfloat16 for the entire notebook
@@ -33,6 +34,9 @@ predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 first_frame = True
 width = 640
 height = 360
+
+# build model
+sam = SamTracker()
 
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
@@ -63,6 +67,7 @@ def create_app():
                     print(f"Error removing {file_path}: {e}")
         print(f"Remove {count} .ts files")
 
+    # Thread
     def get_and_process_frames():
         global connected_to_RTMP_server
         global points
@@ -93,20 +98,7 @@ def create_app():
             height, width = previous_frame.shape[:2]
             print(f"Width: {width}, Height: {height}")
             previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-            predictor.load_first_frame(previous_frame)
-            _, out_obj_ids, out_mask_logits = predictor.add_new_prompt(
-                frame_idx=0, obj_id=1, points=points, labels=labels
-            )
-            all_mask = np.zeros((height, width, 1), dtype=np.uint8)
-            for i in range(0, len(out_obj_ids)):
-                out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(
-                    np.uint8
-                ) * 255
-                all_mask = cv2.bitwise_or(all_mask, out_mask)
-            all_mask = cv2.cvtColor(all_mask, cv2.COLOR_GRAY2RGB)
-            previous_frame = cv2.addWeighted(previous_frame, 1, all_mask, 0.5, 0)
-            for point in points:
-                cv2.circle(previous_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
+            previous_frame, object_on_screen = sam.prompt_first_frame(previous_frame)
 
             while True:
                 ret, current_frame = cap.read()
@@ -119,20 +111,9 @@ def create_app():
 
                 # Process current_frame with SAM and draw mask and point on it
                 current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-                out_obj_ids, out_mask_logits = predictor.track(current_frame)
-                all_mask = np.zeros((height, width, 1), dtype=np.uint8)
-                for i in range(0, len(out_obj_ids)):
-                    out_mask = (out_mask_logits[i] > 0.0).permute(1, 2, 0).cpu().numpy().astype(
-                        np.uint8
-                    ) * 255
-                    all_mask = cv2.bitwise_or(all_mask, out_mask)
-                all_mask = cv2.cvtColor(all_mask, cv2.COLOR_GRAY2RGB)
-                current_frame = cv2.addWeighted(current_frame, 1, all_mask, 0.5, 0)
-                for point in points:
-                    cv2.circle(current_frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
+                current_frame, object_on_screen = sam.track(current_frame)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
@@ -145,6 +126,7 @@ def create_app():
             cap.release()
             time.sleep(3)
 
+    # Thread
     def segment_to_ts():
         global connected_to_RTMP_server
         global segment
