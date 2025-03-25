@@ -218,7 +218,7 @@ app = create_app()
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    print(f'Received request at /ping from {request.headers.get('X-Forward-For', request.remote_addr)}')
+    print(f"Received request at /ping from {request.headers.get('X-Forwarded-For', request.remote_addr)}")
     return "healthy" if torch.cuda.is_available() and sam else "unhealthy"
 
 
