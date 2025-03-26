@@ -107,7 +107,7 @@ def create_app():
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
-                time.sleep(0.033333333333)  # 30 fps
+                time.sleep(0.0033333333333)
 
             cap.release()
             time.sleep(3)
@@ -133,7 +133,7 @@ def create_app():
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
                 old_segment_length = new_segment_length
-            time.sleep(0.033333333333)  # 30 fps
+            time.sleep(0.0033333333333)
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
