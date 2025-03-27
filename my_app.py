@@ -147,7 +147,7 @@ def create_app():
             "-hls_time", f"{EXT_X_TARGETDURATION}",
             "-hls_list_size", "0",
             "-hls_flags", "append_list",
-            "stream.m3u8"
+            os.path.join(HLS_DIR, "stream.m3u8")
         ]
         ffmpeg_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
         while True:
@@ -159,6 +159,7 @@ def create_app():
             for frame_bytes, _ in segment:
                 ffmpeg_process.stdin.write(frame_bytes)
             segment_duration = 0
+            segment.clear()
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
