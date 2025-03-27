@@ -136,18 +136,13 @@ def create_app():
         print("segment_to_ts thread initialized")
         ffmpeg_cmd = [
             "ffmpeg",
-            "-y",
-            "-f", "image2pipe",
-            "-vcodec", "mjpeg",
+            "-loop", "1"
             "-i", "-",
             "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-g", "30",
-            "-r", "30",
-            "-hls_time", f"{EXT_X_TARGETDURATION}",
-            "-hls_list_size", "0",
-            "-hls_flags", "append_list",
-            os.path.join(HLS_DIR, "stream.m3u8")
+            "-f", "segment",
+            "-segment_time", f"{EXT_X_TARGETDURATION}",
+            "-segment_list", os.path.join(HLS_DIR, "stream.m3u8"),
+            os.path.join(HLS_DIR, "200_%06d.ts")
         ]
         ffmpeg_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
         while True:
