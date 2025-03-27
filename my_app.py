@@ -137,6 +137,7 @@ def create_app():
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
+            "-f", "image2pipe",
             "-i", "-",
             "-an",
             "-c:v", "libx264",
