@@ -217,8 +217,8 @@ def create_app():
 
         with open(M3U8_FILE, "w") as file:
             file.write(
-                M3U8_FILE_HEADER
-                + f"{''.join(f'#EXTINF:{round(dur, 6)},\n{f}' for f, dur in segments)}"
+                M3U8_FILE_HEADER + "\n"
+                + f"{'\n'.join(f'#EXTINF:{round(dur, 6)},\n{f}' for f, dur in segments)}"
             )
         print("Updated m3u8")
 
