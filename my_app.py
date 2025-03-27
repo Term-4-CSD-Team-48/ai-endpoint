@@ -44,7 +44,7 @@ def create_app():
         with open(M3U8_FILE, "w") as f:
             # #EXT-X-ENDLIST\n
             f.write(
-                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0")
+                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-INDEPENDENT-SEGMENTS")
         print("Resetted .m3u8 file")
         # Delete all .ts files
         count = 0
@@ -151,6 +151,7 @@ def create_app():
                 # Use FFMPEG to write the .ts file
                 # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
                 fps = new_segment_length/segment_duration
+                # TODO: Figure out how to make independent segments if .ts file still failing
                 if ffmpeg_process is None:
                     command = [
                         'ffmpeg',
@@ -161,7 +162,7 @@ def create_app():
                         '-i', '-',  # Input comes from stdin
                         '-c:v', 'libx264',  # Use H.264 codec
                         '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
-                        '-vsync', 'vfr',  # Allow variable frame rate
+                        '-r', '30',  # Output is constant 30 fps
                         '-f', 'mpegts',  # Output format .ts
                         output_path
                     ]
