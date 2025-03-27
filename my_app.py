@@ -94,7 +94,9 @@ def create_app():
                 while cap.isOpened():
                     ret, current_frame = cap.read()
                     t2 = time.time()  # End time of previous_frame / Start time of current_frame
+                    print("Reading frame")
                     if not ret:
+                        print("Found latest frame")
                         break
 
                 if not ret:
