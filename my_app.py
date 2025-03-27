@@ -65,7 +65,6 @@ def create_app():
         while True:
             print("Connecting to RTMP server...")
             cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Set buffer size to 1 frame
 
             if not cap.isOpened():
                 connected_to_RTMP_server = False
@@ -89,8 +88,15 @@ def create_app():
             previous_frame, object_on_screen = sam.prompt_first_frame(previous_frame)
 
             while True:
-                ret, current_frame = cap.read()
-                t2 = time.time()  # End time of previous_frame / Start time of current_frame
+                # Flush buffer manually
+                current_frame = None
+                t2 = None
+                while cap.isOpened():
+                    ret, current_frame = cap.read()
+                    t2 = time.time()  # End time of previous_frame / Start time of current_frame
+                    if not ret:
+                        break
+
                 if not ret:
                     print(
                         "Warning: Failed to retrieve frame. Reconnecting after 3 seconds delay")
