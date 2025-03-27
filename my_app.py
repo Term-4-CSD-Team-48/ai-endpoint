@@ -65,6 +65,7 @@ def create_app():
         while True:
             print("Connecting to RTMP server...")
             cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Set buffer size to 1 frame
 
             if not cap.isOpened():
                 connected_to_RTMP_server = False

@@ -35,15 +35,15 @@ class SamTracker:
         points = self.points
         labels = self.labels
         out_obj_ids, out_mask_logits = None, None
-        if self.changed_points:
+        if not self.changed_points:
+            out_obj_ids, out_mask_logits = self._sam.track(frame)
+        else:
             self.changed_points = False
             self._sam.load_first_frame(frame)
             self._sam.reset_state()
             _, out_obj_ids, out_mask_logits = self._sam.add_new_prompt(
                 frame_idx=0, obj_id=1, points=points, labels=labels
             )
-        else:
-            out_obj_ids, out_mask_logits = self._sam.track(frame)
         return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
 
     def draw_masks_and_points_on_frame(self, frame, out_obj_ids, out_mask_logits, points):
