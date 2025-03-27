@@ -182,7 +182,7 @@ def create_app():
                 # Post-op cleanup
                 segment.clear()
                 segment_duration = 0
-                # ffmpeg_process = None
+                ffmpeg_process = None
             time.sleep(1/4)
 
     def update_m3u8(filename: str, segment_duration):
