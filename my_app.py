@@ -35,8 +35,10 @@ EXT_X_VERSION = 6
 M3U8_FILE_HEADER_FORMAT = "#EXTM3U\n#EXT-X-VERSION:{EXT_X_VERSION}\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:{EXT_X_MEDIA_SEQUENCE}\n#EXT-X-INDEPENDENT-SEGMENTS"
 M3U8_FILE_HEADER = M3U8_FILE_HEADER_FORMAT.format(
     EXT_X_VERSION=EXT_X_VERSION, EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=0)
-segment = []
+
 segments = []
+segment = []
+segment_duration = 0
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
 connected_to_RTMP_server = False
 
@@ -66,6 +68,7 @@ def create_app():
     def get_and_process_frames():
         global connected_to_RTMP_server
         global segment
+        global segment_duration
         global sam
         while True:
             print("Connecting to RTMP server...")
@@ -111,6 +114,7 @@ def create_app():
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 segment.append((previous_frame, t2 - t1))
+                segment_duration = segment_duration + t2 - t1
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
@@ -124,10 +128,9 @@ def create_app():
     def segment_to_ts():
         global connected_to_RTMP_server
         global segment
+        global segment_duration
         global threshold_segment_duration
         segment_filename_idx = 0
-        old_segment_length = 0
-        segment_duration = 0
         ffmpeg_process = None
         print("segment_to_ts thread initialized")
         while True:
@@ -135,18 +138,9 @@ def create_app():
                 print("segment_to_ts_thread going to sleep now for 5s as not connected to RTMP server")
                 time.sleep(5)
                 continue
-            new_segment_length = len(segment)
-            if new_segment_length != old_segment_length:
-                difference = new_segment_length - old_segment_length
-                for i in range(old_segment_length, new_segment_length, difference):
-                    segment_duration = segment_duration + segment[i][1]
-                old_segment_length = new_segment_length
-            time.sleep(1/4)
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
-                print(
-                    f"Segment duration at {segment_duration} has exceeded {threshold_segment_duration} with length {new_segment_length}")
                 # Output file name and path
                 output_filename = f"{segment_filename_idx}.ts"
                 segment_filename_idx += 1
@@ -154,8 +148,9 @@ def create_app():
 
                 # Use FFMPEG to write the .ts file
                 # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
-                fps = new_segment_length/segment_duration
+                fps = len(segment)/segment_duration
                 # TODO: Figure out how to make independent segments if .ts file still failing
+                # -fflags +genpts
                 if ffmpeg_process is None:
                     command = [
                         'ffmpeg',
@@ -184,9 +179,9 @@ def create_app():
 
                 # Post-op cleanup
                 segment.clear()
-                old_segment_length = 0
                 segment_duration = 0
                 ffmpeg_process = None
+            time.sleep(1/4)
 
     def update_m3u8(filename: str, segment_duration):
         # with open(M3U8_FILE, "r+") as file:
@@ -213,19 +208,23 @@ def create_app():
         #         file.write(
         #             f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n"
         #         )
-        global segments
-        segments.append((filename, segment_duration))
-        if (len(segments) > 5):
-            segments.pop(0)
+        # global segments
+        # segments.append((filename, segment_duration))
+        # if (len(segments) > 5):
+        #     segments.pop(0)
 
-        body = ""
-        for f, dur in segments:
-            body = body + f"\n#EXTINF:{round(dur, 6)},\n{f}"
+        # body = ""
+        # for f, dur in segments:
+        #     body = body + f"\n#EXTINF:{round(dur, 6)},\n{f}"
 
-        with open(M3U8_FILE, "w") as file:
+        # with open(M3U8_FILE, "w") as file:
+        #     file.write(
+        #         M3U8_FILE_HEADER_FORMAT.format(EXT_X_VERSION=EXT_X_VERSION,
+        #                                        EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=segments[0][0].split('.')[0]) + body
+        #     )
+        with open(M3U8_FILE, "a") as file:
             file.write(
-                M3U8_FILE_HEADER_FORMAT.format(EXT_X_VERSION=EXT_X_VERSION,
-                                               EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=segments[0][0].split('.')[0]) + body
+                f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}"
             )
         print("Updated m3u8")
 
