@@ -88,16 +88,8 @@ def create_app():
             previous_frame, object_on_screen = sam.prompt_first_frame(previous_frame)
 
             while True:
-                # Flush buffer manually
-                current_frame = None
-                t2 = None
-                while cap.isOpened():
-                    ret, current_frame = cap.read()
-                    t2 = time.time()  # End time of previous_frame / Start time of current_frame
-                    print("Reading frame")
-                    if not ret:
-                        print("Found latest frame")
-                        break
+                ret, current_frame = cap.read()
+                t2 = time.time()  # End time of previous_frame / Start time of current_frame
 
                 if not ret:
                     print(
@@ -117,7 +109,7 @@ def create_app():
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
-                time.sleep(0.0033333333333)
+                # time.sleep(1/128)
 
             cap.release()
             time.sleep(3)
@@ -143,7 +135,7 @@ def create_app():
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
                 old_segment_length = new_segment_length
-            time.sleep(0.0033333333333)
+            time.sleep(1/128)
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
