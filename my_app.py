@@ -136,8 +136,9 @@ def create_app():
         print("segment_to_ts thread initialized")
         ffmpeg_cmd = [
             "ffmpeg",
-            "-loop", "1"
+            "-loop", "1",
             "-i", "-",
+            "-an",
             "-c:v", "libx264",
             "-f", "segment",
             "-segment_time", f"{EXT_X_TARGETDURATION}",
