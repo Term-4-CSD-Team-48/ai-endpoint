@@ -11,6 +11,8 @@ class Streamer:
             self._thread = Thread(target=self._update, daemon=True)
             self._thread.start()
             self._opened = True
+            self._ret = None
+            self._frame = None
             print("Streamer thread listening for ", url)
         else:
             self._opened = False

@@ -127,8 +127,8 @@ def create_app():
         print("segment_to_ts thread initialized")
         while True:
             if not connected_to_RTMP_server:
-                print("segment_to_ts_thread going to sleep now for 1s as not connected to RTMP server")
-                time.sleep(1)
+                print("segment_to_ts_thread going to sleep now for 5s as not connected to RTMP server")
+                time.sleep(5)
                 continue
             new_segment_length = len(segment)
             if new_segment_length != old_segment_length:
