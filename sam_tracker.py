@@ -20,6 +20,7 @@ class SamTracker:
         self._sam = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
         self._points = np.array([[0, 0]], dtype=np.float32)
         self.labels = np.array([1], dtype=np.int32)
+        self.changed_points = False
 
     def prompt_first_frame(self, frame):
         points = self.points
@@ -30,19 +31,19 @@ class SamTracker:
         )
         return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
 
-    def prompt_non_first_frame(self, frame):
-        points = self.points
-        labels = self.labels
-        self._sam.load_first_frame(frame)
-        self._sam.reset_state()
-        _, out_obj_ids, out_mask_logits = self._sam.add_new_prompt(
-            frame_idx=0, obj_id=1, points=points, labels=labels
-        )
-        return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
-
     def track(self, frame):
         points = self.points
-        out_obj_ids, out_mask_logits = self._sam.track(frame)
+        labels = self.labels
+        out_obj_ids, out_mask_logits = None, None
+        if self.changed_points:
+            self.changed_points = False
+            self._sam.load_first_frame(frame)
+            self._sam.reset_state()
+            _, out_obj_ids, out_mask_logits = self._sam.add_new_prompt(
+                frame_idx=0, obj_id=1, points=points, labels=labels
+            )
+        else:
+            out_obj_ids, out_mask_logits = self._sam.track(frame)
         return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
 
     def draw_masks_and_points_on_frame(self, frame, out_obj_ids, out_mask_logits, points):
@@ -76,6 +77,8 @@ class SamTracker:
         """
         Call reset_state immediately after this
         """
+        print("SamTracker points have changed")
+        self.changed_points = True
         self._points = points
 
     points = property(get_points, set_points)

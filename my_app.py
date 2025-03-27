@@ -235,13 +235,15 @@ def invocations():
     print(f"Received request at /invocations from {client_ip} with {data}")
     if not client_ip.startswith("10.0"):
         return "outsiders not allowed", 403
-    if not data:
+    if not data['x'] or not data['y']:
         return "invalid JSON", 400  # Handle case where JSON is missing
 
     # Extract a cookie from the request
     # cookie_value = request.cookies.get('JSESSIONID', None)
     # if cookie_value is None:
     #     return "unauthorized", 401
+
+    sam.points = np.array([[data['x'], data['y']]], dtype=np.float32)
 
     return "changed points", 200
 
