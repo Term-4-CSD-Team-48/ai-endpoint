@@ -31,7 +31,9 @@ sam = SamTracker()
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 EXT_X_TARGETDURATION = 6
+M3U8_FILE_HEADER = f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-INDEPENDENT-SEGMENTS"
 segment = []
+segments = []
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
 connected_to_RTMP_server = False
 
@@ -43,8 +45,7 @@ def create_app():
         # Reset .m3u8
         with open(M3U8_FILE, "w") as f:
             # #EXT-X-ENDLIST\n
-            f.write(
-                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-INDEPENDENT-SEGMENTS")
+            f.write(M3U8_FILE_HEADER)
         print("Resetted .m3u8 file")
         # Delete all .ts files
         count = 0
@@ -176,7 +177,7 @@ def create_app():
                 ffmpeg_process.wait()
 
                 # Update .m3u8 playlist
-                update_m3u8(output_filename, segment_duration, segment_filename_idx)
+                update_m3u8(output_filename, segment_duration)
 
                 # Post-op cleanup
                 segment.clear()
@@ -184,7 +185,7 @@ def create_app():
                 segment_duration = 0
                 ffmpeg_process = None
 
-    def update_m3u8(filename: str, segment_duration, idx):
+    def update_m3u8(filename: str, segment_duration):
         # with open(M3U8_FILE, "r+") as file:
         #     # Move the pointer (similar to a cursor in a text editor) to the end of the file
         #     file.seek(0, os.SEEK_END)
@@ -209,9 +210,14 @@ def create_app():
         #         file.write(
         #             f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n"
         #         )
-        with open(M3U8_FILE, "a") as file:
+        global segments
+        segments.append((filename, segment_duration))
+        if (len(segments) > 5):
+            segments.pop(0)
+
+        with open(M3U8_FILE, "w") as file:
             file.write(
-                f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}"
+                M3U8_FILE_HEADER.join(f'\n#EXTINF:{round(dur, 6)},\n{f}' for f, dur in segments)
             )
         print("Updated m3u8")
 
