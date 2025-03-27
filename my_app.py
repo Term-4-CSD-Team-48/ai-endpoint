@@ -41,8 +41,9 @@ def create_app():
     def reset_m3u8():
         # Reset .m3u8
         with open(M3U8_FILE, "w") as f:
+            # #EXT-X-ENDLIST\n
             f.write(
-                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ENDLIST")
+                f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0")
         print("Resetted .m3u8 file")
         # Delete all .ts files
         count = 0
@@ -140,7 +141,7 @@ def create_app():
                 print(
                     f"Segment duration at {segment_duration} has exceeded {threshold_segment_duration} with length {new_segment_length}")
                 # Output file name and path
-                output_filename = f"segment_{segment_filename_idx}.ts"
+                output_filename = f"{segment_filename_idx}.ts"
                 segment_filename_idx += 1
                 output_path = os.path.join(HLS_DIR, output_filename)
 
@@ -171,7 +172,7 @@ def create_app():
                 ffmpeg_process.wait()
 
                 # Update .m3u8 playlist
-                update_m3u8(output_filename, segment_duration)
+                update_m3u8(output_filename, segment_duration, segment_filename_idx)
 
                 # Post-op cleanup
                 segment.clear()
@@ -179,31 +180,35 @@ def create_app():
                 segment_duration = 0
                 ffmpeg_process = None
 
-    def update_m3u8(filename: str, segment_duration):
-        with open(M3U8_FILE, "r+") as file:
-            # Move the pointer (similar to a cursor in a text editor) to the end of the file
-            file.seek(0, os.SEEK_END)
+    def update_m3u8(filename: str, segment_duration, idx):
+        # with open(M3U8_FILE, "r+") as file:
+        #     # Move the pointer (similar to a cursor in a text editor) to the end of the file
+        #     file.seek(0, os.SEEK_END)
 
-            # This code means the following code skips the very last character in the file -
-            # i.e. in the case the last line is null we delete the last line
-            # and the penultimate one
-            pos = file.tell() - 1
+        #     # This code means the following code skips the very last character in the file -
+        #     # i.e. in the case the last line is null we delete the last line
+        #     # and the penultimate one
+        #     pos = file.tell() - 1
 
-            # Read each character in the file one at a time from the penultimate
-            # character going backwards, searching for a newline character
-            # If we find a new line, exit the search
-            while pos > 0 and file.read(1) != "\n":
-                pos -= 1
-                file.seek(pos, os.SEEK_SET)
+        #     # Read each character in the file one at a time from the penultimate
+        #     # character going backwards, searching for a newline character
+        #     # If we find a new line, exit the search
+        #     while pos > 0 and file.read(1) != "\n":
+        #         pos -= 1
+        #         file.seek(pos, os.SEEK_SET)
 
-            # So long as we're not at the start of the file, delete all the characters ahead
-            # of this position
-            if pos > 0:
-                file.seek(pos, os.SEEK_SET)
-                file.truncate()
-                file.write(
-                    f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n#EXT-X-ENDLIST"
-                )
+        #     # So long as we're not at the start of the file, delete all the characters ahead
+        #     # of this position
+        #     if pos > 0:
+        #         file.seek(pos, os.SEEK_SET)
+        #         file.truncate()
+        #         file.write(
+        #             f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}\n"
+        #         )
+        with open(M3U8_FILE, "a") as file:
+            file.write(
+                f"\n#EXTINF:{round(segment_duration, 6)},\n{filename}"
+            )
         print("Updated m3u8")
 
     get_and_process_frames_thread = threading.Thread(target=get_and_process_frames, daemon=True)
