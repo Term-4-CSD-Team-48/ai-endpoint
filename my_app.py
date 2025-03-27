@@ -157,6 +157,7 @@ def create_app():
                 print("processing 1 frame")
                 ffmpeg_process.stdin.write(frame_bytes)
                 ffmpeg_process.stdin.flush()
+                ffmpeg_process.stdin.close()
             segment_duration = 0
             segment.clear()
 
