@@ -113,8 +113,9 @@ def create_app():
                 # Turn previous_frame to bytes for ffmpeg processing
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
-                segment.append((previous_frame, t2 - t1))
-                segment_duration = segment_duration + t2 - t1
+                frame_time = t2 - t1
+                segment.append((previous_frame, frame_time))
+                segment_duration = segment_duration + frame_time
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
@@ -156,6 +157,7 @@ def create_app():
                         'ffmpeg',
                         '-y',  # Overwrite output file without asking
                         '-f', 'image2pipe',
+                        '-fflags', '+genpts',
                         '-vcodec', 'mjpeg',
                         '-framerate', str(fps),  # Set dynamic frame rate
                         '-i', '-',  # Input comes from stdin
