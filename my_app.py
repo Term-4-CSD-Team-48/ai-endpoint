@@ -115,7 +115,8 @@ def create_app():
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 frame_time = t2 - t1
-                segment.append((previous_frame, frame_time))
+                if not len(segment) > 0:
+                    segment.append((previous_frame, frame_time))
                 segment_duration = segment_duration + frame_time
 
                 # Set previous_frame to current_frame and t1 to t2
@@ -138,6 +139,7 @@ def create_app():
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
+            "-re",
             "-i", tmp_filepath,
             "-c:v", "libx264",
             "-hls_time", f"{EXT_X_TARGETDURATION}",
