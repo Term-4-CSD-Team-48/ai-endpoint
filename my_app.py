@@ -134,11 +134,31 @@ def create_app():
         segment_filename_idx = 0
         ffmpeg_process = None
         print("segment_to_ts thread initialized")
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",
+            "-f", "image2pipe",
+            "-vcodec", "mjpeg",
+            "-i", "-",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-g", "30",
+            "-r", "30",
+            "-hls_time", f"{EXT_X_TARGETDURATION}",
+            "-hls_list_size", "0",
+            "-hls_flags", "append_list",
+            "stream.m3u8"
+        ]
+        ffmpeg_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
         while True:
             if not connected_to_RTMP_server:
                 print("segment_to_ts_thread going to sleep now for 5s as not connected to RTMP server")
                 time.sleep(5)
                 continue
+
+            for frame_bytes, _ in segment:
+                ffmpeg_process.stdin.write(frame_bytes)
+            segment_duration = 0
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
@@ -157,7 +177,7 @@ def create_app():
                         'ffmpeg',
                         '-y',  # Overwrite output file without asking
                         '-f', 'image2pipe',
-                        '-fflags', '+genpts',
+                        '-fflags', '+genpts',  # generate presentation timestamps (PTS)
                         '-vcodec', 'mjpeg',
                         '-framerate', str(fps),  # Set dynamic frame rate
                         '-i', '-',  # Input comes from stdin
@@ -182,7 +202,7 @@ def create_app():
                 # Post-op cleanup
                 segment.clear()
                 segment_duration = 0
-                ffmpeg_process = None
+                # ffmpeg_process = None
             time.sleep(1/4)
 
     def update_m3u8(filename: str, segment_duration):
