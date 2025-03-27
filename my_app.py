@@ -31,7 +31,10 @@ sam = SamTracker()
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 EXT_X_TARGETDURATION = 6
-M3U8_FILE_HEADER = f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-INDEPENDENT-SEGMENTS"
+EXT_X_VERSION = 6
+M3U8_FILE_HEADER_FORMAT = "#EXTM3U\n#EXT-X-VERSION:{EXT_X_VERSION}\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:{EXT_X_MEDIA_SEQUENCE}\n#EXT-X-INDEPENDENT-SEGMENTS"
+M3U8_FILE_HEADER = M3U8_FILE_HEADER_FORMAT.format(
+    EXT_X_VERSION=EXT_X_VERSION, EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=0)
 segment = []
 segments = []
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
@@ -46,7 +49,7 @@ def create_app():
         with open(M3U8_FILE, "w") as f:
             # #EXT-X-ENDLIST\n
             f.write(M3U8_FILE_HEADER)
-        print("Resetted .m3u8 file")
+        print("Resetted .m3u8 file with " + M3U8_FILE_HEADER)
         # Delete all .ts files
         count = 0
         for filename in os.listdir(HLS_DIR):
@@ -215,13 +218,14 @@ def create_app():
         if (len(segments) > 5):
             segments.pop(0)
 
-        body = "\n"
+        body = ""
         for f, dur in segments:
             body = body + f"\n#EXTINF:{round(dur, 6)},\n{f}"
 
         with open(M3U8_FILE, "w") as file:
             file.write(
-                M3U8_FILE_HEADER + body
+                M3U8_FILE_HEADER_FORMAT.format(EXT_X_VERSION=EXT_X_VERSION,
+                                               EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=segments[0][0].split('.')[0]) + body
             )
         print("Updated m3u8")
 
