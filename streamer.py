@@ -20,7 +20,7 @@ class Streamer:
         while True:
             if self._cap.isOpened():
                 (self._ret, self._frame) = self._cap.read()
-            time.sleep(1/128)
+            time.sleep(1/256)
 
     def isOpened(self):
         return self._opened

@@ -77,7 +77,7 @@ def create_app():
             connected_to_RTMP_server = True
             print("Connected to RTMP server!")
             reset_m3u8()
-            ret, previous_frame = streamer._ret, streamer._frame  # previous_frame is an np.array
+            ret, previous_frame = streamer.read()  # previous_frame is an np.array
             t1 = time.time()  # Start time of previous_frame
             if not ret:
                 raise Exception("Failed to get first frame!")
@@ -110,7 +110,7 @@ def create_app():
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
-                time.sleep(1/128)
+                time.sleep(1/64)
 
             streamer.release()
             time.sleep(3)
@@ -136,7 +136,7 @@ def create_app():
                 for i in range(old_segment_length, new_segment_length, difference):
                     segment_duration = segment_duration + segment[i][1]
                 old_segment_length = new_segment_length
-            time.sleep(1/128)
+            time.sleep(1/4)
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
