@@ -41,6 +41,7 @@ segment = []
 segment_duration = 0
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
 connected_to_RTMP_server = False
+tmp_filepath = os.path.join(HLS_DIR, "tmp.jpg")
 
 
 def create_app():
@@ -137,16 +138,14 @@ def create_app():
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
-            "-f", "image2pipe",
-            "-i", "-",
-            "-an",
+            "-i", tmp_filepath,
             "-c:v", "libx264",
             "-f", "segment",
             "-segment_time", f"{EXT_X_TARGETDURATION}",
             "-segment_list", os.path.join(HLS_DIR, "stream.m3u8"),
             os.path.join(HLS_DIR, "200_%06d.ts")
         ]
-        ffmpeg_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
+        ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
         while True:
             if not connected_to_RTMP_server:
                 print("segment_to_ts_thread going to sleep now for 5s as not connected to RTMP server")
@@ -154,10 +153,8 @@ def create_app():
                 continue
 
             for frame_bytes, _ in segment:
-                print("processing 1 frame")
-                ffmpeg_process.stdin.write(frame_bytes)
-                ffmpeg_process.stdin.flush()
-                ffmpeg_process.stdin.close()
+                with open(tmp_filepath, "wb") as file:
+                    file.write(frame_bytes)
             segment_duration = 0
             segment.clear()
 
