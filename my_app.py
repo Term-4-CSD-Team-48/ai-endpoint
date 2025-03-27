@@ -76,6 +76,7 @@ def create_app():
             # Initialize
             connected_to_RTMP_server = True
             print("Connected to RTMP server!")
+            time.sleep(1)  # Required to relinquish control to streamer thread to get first frame
             reset_m3u8()
             ret, previous_frame = streamer.read()  # previous_frame is an np.array
             t1 = time.time()  # Start time of previous_frame
