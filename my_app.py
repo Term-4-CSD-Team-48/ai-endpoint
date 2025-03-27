@@ -215,10 +215,13 @@ def create_app():
         if (len(segments) > 5):
             segments.pop(0)
 
+        body = "\n"
+        for f, dur in segments:
+            body = body + f"\n#EXTINF:{round(dur, 6)},\n{f}"
+
         with open(M3U8_FILE, "w") as file:
             file.write(
-                M3U8_FILE_HEADER + "\n"
-                + f"{'\n'.join(f'#EXTINF:{round(dur, 6)},\n{f}' for f, dur in segments)}"
+                M3U8_FILE_HEADER + body
             )
         print("Updated m3u8")
 
