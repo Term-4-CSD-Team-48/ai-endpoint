@@ -41,7 +41,6 @@ segment = []
 segment_duration = 0
 threshold_segment_duration = EXT_X_TARGETDURATION - 2
 connected_to_RTMP_server = False
-tmp_filepath = os.path.join(HLS_DIR, "tmp.jpg")
 
 
 def create_app():
@@ -115,8 +114,7 @@ def create_app():
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
                 frame_time = t2 - t1
-                if not len(segment) > 0:
-                    segment.append((previous_frame, frame_time))
+                segment.append((previous_frame, frame_time))
                 segment_duration = segment_duration + frame_time
 
                 # Set previous_frame to current_frame and t1 to t2
@@ -136,29 +134,11 @@ def create_app():
         segment_filename_idx = 0
         ffmpeg_process = None
         print("segment_to_ts thread initialized")
-        ffmpeg_cmd = [
-            "ffmpeg",
-            "-loop", "1",
-            "-re",
-            "-i", tmp_filepath,
-            "-c:v", "libx264",
-            "-hls_time", f"{EXT_X_TARGETDURATION}",
-            "-hls_list_size", "0",
-            "-hls_segment_filename", os.path.join(HLS_DIR, "%06d.ts"),
-            os.path.join(HLS_DIR, "stream.m3u8")
-        ]
-        ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
         while True:
             if not connected_to_RTMP_server:
                 print("segment_to_ts_thread going to sleep now for 5s as not connected to RTMP server")
                 time.sleep(5)
                 continue
-
-            for frame_bytes, _ in segment:
-                with open(tmp_filepath, "wb") as file:
-                    file.write(frame_bytes)
-            segment_duration = 0
-            segment.clear()
 
             # Convert segment to ts file once enough time has lapsed
             if segment_duration >= threshold_segment_duration:
