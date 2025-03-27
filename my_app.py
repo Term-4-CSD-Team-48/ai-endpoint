@@ -13,6 +13,7 @@ import os
 import time
 from queue import Queue
 
+from streamer import Streamer
 from sam_tracker import SamTracker
 from sam2.build_sam import build_sam2_camera_predictor
 
@@ -64,9 +65,9 @@ def create_app():
         global sam
         while True:
             print("Connecting to RTMP server...")
-            cap = cv2.VideoCapture("rtmp://127.0.0.1/live/stream")
+            streamer = Streamer("rtmp://127.0.0.1/live/stream")
 
-            if not cap.isOpened():
+            if not streamer.isOpened():
                 connected_to_RTMP_server = False
                 print("Error: Cannot open RTMP stream. Retrying in 5 seconds")
                 time.sleep(5)  # Wait before retrying
@@ -76,7 +77,7 @@ def create_app():
             connected_to_RTMP_server = True
             print("Connected to RTMP server!")
             reset_m3u8()
-            ret, previous_frame = cap.read()  # previous_frame is an np.array
+            ret, previous_frame = streamer._ret, streamer._frame  # previous_frame is an np.array
             t1 = time.time()  # Start time of previous_frame
             if not ret:
                 raise Exception("Failed to get first frame!")
@@ -88,7 +89,7 @@ def create_app():
             previous_frame, object_on_screen = sam.prompt_first_frame(previous_frame)
 
             while True:
-                ret, current_frame = cap.read()
+                ret, current_frame = streamer.read()
                 t2 = time.time()  # End time of previous_frame / Start time of current_frame
 
                 if not ret:
@@ -109,9 +110,9 @@ def create_app():
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
-                # time.sleep(1/128)
+                time.sleep(1/128)
 
-            cap.release()
+            streamer.release()
             time.sleep(3)
 
     # Thread
