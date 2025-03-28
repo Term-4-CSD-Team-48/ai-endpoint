@@ -106,6 +106,7 @@ def create_app():
             # Set up FFmpeg command to convert processed frames to HLS
             ffmpeg_processed_to_hls_command = [
                 'ffmpeg',
+                '-re',
                 '-i', 'rtmp://127.0.0.1/live/processed',
                 '-c:v', 'libx264',
                 '-crf', '26',  # 51 is worst 1 is best
