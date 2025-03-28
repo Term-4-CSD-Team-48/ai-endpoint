@@ -138,6 +138,7 @@ def create_app():
                 # segment.append((previous_frame, frame_time))
                 # segment_duration = segment_duration + frame_time
                 ffmpeg_process.stdin.write(previous_frame)
+                ffmpeg_process.stdin.flush()
                 print("wrote")
 
                 # Set previous_frame to current_frame and t1 to t2
