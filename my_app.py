@@ -85,6 +85,27 @@ def create_app():
             print("Connected to RTMP server!")
             time.sleep(1)  # Required to relinquish control to streamer thread to get first frame
             reset_m3u8()
+
+            # Set up FFmpeg command to stream processed frames to RTMP
+            ffmpeg_command = [
+                'ffmpeg',
+                '-re',
+                '-f', 'rawvideo',  # Raw video format (no container)
+                '-s', '640x480',  # Output resolution
+                '-pixel_format', 'bgr24',
+                '-r', '30',  # FPS (frames per second)
+                '-i', '-',  # Input from stdin (pipe)
+                '-pix_fmt', 'yuv420p',
+                '-c:v', 'libx264',  # Video codec (H.264)
+                '-bufsize', '64M',
+                '-maxrate', '4M',
+                '-f', 'flv',  # Output format for streaming
+                'rtmp://127.0.0.1/live/processed',  # RTMP URL
+            ]
+
+            # Start the FFmpeg process
+            ffmpeg_process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
+
             ret, previous_frame = streamer.read()  # previous_frame is an np.array
             t1 = time.time()  # Start time of previous_frame
             if not ret:
@@ -113,16 +134,20 @@ def create_app():
                 # Turn previous_frame to bytes for ffmpeg processing
                 _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 previous_frame = previous_frame.tobytes()
-                frame_time = t2 - t1
-                segment.append((previous_frame, frame_time))
-                segment_duration = segment_duration + frame_time
+                # frame_time = t2 - t1
+                # segment.append((previous_frame, frame_time))
+                # segment_duration = segment_duration + frame_time
+                ffmpeg_process.stdin.write(previous_frame)
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
                 time.sleep(1/64)
 
+            print("Not processing frames")
             streamer.release()
+            ffmpeg_process.stdin.close()  # Close stdin pipe
+            ffmpeg_process.wait()
             time.sleep(3)
 
     # Thread
@@ -169,10 +194,7 @@ def create_app():
                         '-g', '1',  # Set GOP size (IDR keyframe every 30 frames)
                         '-bsf:v', 'h264_mp4toannexb',  # Add AUDs for compatibility
                         '-f', 'mpegts',  # Output format .ts
-                        '-hls_time', f'{EXT_X_TARGETDURATION}',
-                        '-hls_flags', 'append_list+independent_segments',
-                        '-hls_list_size', '0',
-                        M3U8_FILE
+                        output_path
                     ]
                     ffmpeg_process = subprocess.Popen(command, stdin=subprocess.PIPE)
 
@@ -184,7 +206,7 @@ def create_app():
                 ffmpeg_process.wait()
 
                 # Update .m3u8 playlist
-                # update_m3u8(output_filename, segment_duration)
+                update_m3u8(output_filename, segment_duration)
 
                 # Post-op cleanup
                 segment.clear()
@@ -239,8 +261,8 @@ def create_app():
 
     get_and_process_frames_thread = threading.Thread(target=get_and_process_frames, daemon=True)
     get_and_process_frames_thread.start()
-    segment_to_ts_thread = threading.Thread(target=segment_to_ts, daemon=True)
-    segment_to_ts_thread.start()
+    # segment_to_ts_thread = threading.Thread(target=segment_to_ts, daemon=True)
+    # segment_to_ts_thread.start()
     return app
 
 
