@@ -91,9 +91,9 @@ def create_app():
                 'ffmpeg',
                 '-re',
                 '-f', 'rawvideo',  # Raw video format (no container)
-                '-s', '640x480',  # Output resolution
-                '-pixel_format', 'bgr24',
-                '-r', '30',  # Output FPS (frames per second)
+                '-s', '640x360 ',  # Output resolution
+                '-pixel_format', 'rgb24',
+                '-r', '10',  # Output FPS (frames per second)
                 '-i', '-',  # Input from stdin (pipe)
                 '-pix_fmt', 'yuv420p',
                 '-c:v', 'libx264',  # Video codec (H.264)
@@ -135,7 +135,7 @@ def create_app():
 
                 # Turn previous_frame to bytes for ffmpeg processing
                 # _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
+                # previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 previous_frame = previous_frame.tobytes()
                 # frame_time = t2 - t1
                 # segment.append((previous_frame, frame_time))
