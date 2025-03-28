@@ -106,7 +106,9 @@ def create_app():
             # Set up FFmpeg command to convert processed frames to HLS
             ffmpeg_processed_to_hls_command = [
                 'ffmpeg',
+                '-r', '10',
                 '-i', 'rtmp://127.0.0.1/live/processed',
+                '-r', '10',
                 '-c:v', 'libx264',
                 '-crf', '26',  # 51 is worst 1 is best
                 '-preset', 'ultrafast',
@@ -114,7 +116,7 @@ def create_app():
                 '-sc_threshold', '0',
                 '-f', 'hls',
                 '-hls_time', '4',
-                '-hls_flags', 'split_by_time',
+                '-hls_flags', 'independent_segments',
                 '-hls_playlist_type', 'event',
                 M3U8_FILE
             ]
