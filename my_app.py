@@ -133,14 +133,12 @@ def create_app():
 
                 # Turn previous_frame to bytes for ffmpeg processing
                 # _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_RGB2BGR)
+                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)
                 previous_frame = previous_frame.tobytes()
                 # frame_time = t2 - t1
                 # segment.append((previous_frame, frame_time))
                 # segment_duration = segment_duration + frame_time
                 ffmpeg_process.stdin.write(previous_frame)
-                ffmpeg_process.stdin.flush()
-                print("wrote")
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
