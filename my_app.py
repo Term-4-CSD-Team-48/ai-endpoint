@@ -91,7 +91,7 @@ def create_app():
                 'ffmpeg',
                 '-re',
                 '-f', 'rawvideo',  # Raw video format (no container)
-                '-s', '640x360 ',  # Output resolution
+                '-s', '640x360',  # Output resolution
                 '-pixel_format', 'rgb24',
                 '-r', '10',  # Output FPS (frames per second)
                 '-i', '-',  # Input from stdin (pipe)
