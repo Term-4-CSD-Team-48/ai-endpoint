@@ -99,6 +99,8 @@ def create_app():
                 '-c:v', 'libx264',  # Video codec (H.264)
                 '-bufsize', '64M',
                 '-maxrate', '4M',
+                '-preset', 'ultrafast',
+                '-tune', 'zerolatency',
                 '-f', 'flv',  # Output format for streaming
                 'rtmp://127.0.0.1/live/processed',  # RTMP URL
             ]
