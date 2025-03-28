@@ -169,7 +169,10 @@ def create_app():
                         '-g', '1',  # Set GOP size (IDR keyframe every 30 frames)
                         '-bsf:v', 'h264_mp4toannexb',  # Add AUDs for compatibility
                         '-f', 'mpegts',  # Output format .ts
-                        output_path
+                        '-hls_time', f'{EXT_X_TARGETDURATION}',
+                        '-hls_flags', 'append_list+independent_segments',
+                        '-hls_list_size', '0',
+                        M3U8_FILE
                     ]
                     ffmpeg_process = subprocess.Popen(command, stdin=subprocess.PIPE)
 
@@ -181,7 +184,7 @@ def create_app():
                 ffmpeg_process.wait()
 
                 # Update .m3u8 playlist
-                update_m3u8(output_filename, segment_duration)
+                # update_m3u8(output_filename, segment_duration)
 
                 # Post-op cleanup
                 segment.clear()
