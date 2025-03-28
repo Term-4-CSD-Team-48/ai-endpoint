@@ -163,8 +163,8 @@ def create_app():
                         '-i', '-',  # Input comes from stdin
                         '-c:v', 'libx264',  # Use H.264 codec
                         '-preset', 'ultrafast',  # Fastest encoding (use 'medium' for better compression)
-                        # '-r', '30',  # Output is constant 30 fps
-                        '-g', str(fps),  # Set GOP size (IDR keyframe every 30 frames)
+                        '-r', '30',  # Output is constant 30 fps
+                        '-g', '1',  # Set GOP size (IDR keyframe every 30 frames)
                         '-bsf:v', 'h264_mp4toannexb',  # Add AUDs for compatibility
                         '-f', 'mpegts',  # Output format .ts
                         output_path
