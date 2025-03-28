@@ -30,7 +30,7 @@ sam = SamTracker()
 
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
-EXT_X_TARGETDURATION = 6
+EXT_X_TARGETDURATION = 5
 EXT_X_VERSION = 6
 M3U8_FILE_HEADER_FORMAT = "#EXTM3U\n#EXT-X-VERSION:{EXT_X_VERSION}\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:{EXT_X_MEDIA_SEQUENCE}\n#EXT-X-INDEPENDENT-SEGMENTS"
 M3U8_FILE_HEADER = M3U8_FILE_HEADER_FORMAT.format(
@@ -39,7 +39,7 @@ M3U8_FILE_HEADER = M3U8_FILE_HEADER_FORMAT.format(
 segments = []
 segment = []
 segment_duration = 0
-threshold_segment_duration = EXT_X_TARGETDURATION - 2
+threshold_segment_duration = EXT_X_TARGETDURATION - 1
 connected_to_RTMP_server = False
 
 
