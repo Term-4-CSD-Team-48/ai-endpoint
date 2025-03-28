@@ -93,7 +93,7 @@ def create_app():
                 '-f', 'rawvideo',  # Raw video format (no container)
                 '-s', '640x480',  # Output resolution
                 '-pixel_format', 'bgr24',
-                '-r', '30',  # FPS (frames per second)
+                '-r', '30',  # Output FPS (frames per second)
                 '-i', '-',  # Input from stdin (pipe)
                 '-pix_fmt', 'yuv420p',
                 '-c:v', 'libx264',  # Video codec (H.264)
@@ -132,7 +132,8 @@ def create_app():
                 current_frame, object_on_screen = sam.track(current_frame)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                # _, previous_frame = cv2.imencode('.jpg', previous_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_RGB2BGR)
                 previous_frame = previous_frame.tobytes()
                 # frame_time = t2 - t1
                 # segment.append((previous_frame, frame_time))
