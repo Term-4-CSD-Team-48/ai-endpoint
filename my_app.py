@@ -32,7 +32,7 @@ HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 EXT_X_TARGETDURATION = 5
 EXT_X_VERSION = 6
-M3U8_FILE_HEADER_FORMAT = "#EXTM3U\n#EXT-X-VERSION:{EXT_X_VERSION}\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:{EXT_X_MEDIA_SEQUENCE}\n#EXT-X-INDEPENDENT-SEGMENTS"
+M3U8_FILE_HEADER_FORMAT = "#EXTM3U\nEXT-X-PLAYLIST-TYPE: EVENT\n#EXT-X-VERSION:{EXT_X_VERSION}\n#EXT-X-TARGETDURATION:{EXT_X_TARGETDURATION}\n#EXT-X-MEDIA-SEQUENCE:{EXT_X_MEDIA_SEQUENCE}\n#EXT-X-INDEPENDENT-SEGMENTS"
 M3U8_FILE_HEADER = M3U8_FILE_HEADER_FORMAT.format(
     EXT_X_VERSION=EXT_X_VERSION, EXT_X_TARGETDURATION=EXT_X_TARGETDURATION, EXT_X_MEDIA_SEQUENCE=0)
 
@@ -150,8 +150,10 @@ def create_app():
                 # Use FFMPEG to write the .ts file
                 # `ffmpeg` command to convert raw frames to a .ts file with H.264 codec
                 fps = len(segment)/segment_duration
-                # TODO: Figure out how to make independent segments if .ts file still failing
-                # -fflags +genpts
+
+                # -hls_flags append_list+independent_segments
+                # -hls_list_size 0
+                # -hls_time 5
                 if ffmpeg_process is None:
                     command = [
                         'ffmpeg',
