@@ -87,12 +87,12 @@ def create_app():
             reset_m3u8()
 
             # Set up FFmpeg command to stream processed frames to RTMP
-            ffmpeg_command = [
+            ffmpeg_stream_processed_command = [
                 'ffmpeg',
                 '-re',
                 '-f', 'rawvideo',  # Raw video format (no container)
-                '-s', '640x360',  # Output resolution
-                '-pixel_format', 'rgb24',
+                '-s', '640x360',  # Input resolution
+                '-pixel_format', 'bgr24',
                 '-r', '10',  # Output FPS (frames per second)
                 '-i', '-',  # Input from stdin (pipe)
                 '-pix_fmt', 'yuv420p',
@@ -103,8 +103,25 @@ def create_app():
                 'rtmp://127.0.0.1/live/processed',  # RTMP URL
             ]
 
-            # Start the FFmpeg process
-            ffmpeg_process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
+            # Set up FFmpeg command to convert processed frames to HLS
+            ffmpeg_processed_to_hls_command = [
+                'ffmpeg',
+                '-listen', '1',
+                '-i', 'rtmp://127.0.0.1/live/processed',
+                '-c:v', 'libx264',
+                '-crf', '26',  # 51 is worst 1 is best
+                '-preset', 'ultrafast',
+                '-g', '10',
+                '-sc_threshold', '0',
+                '-f', 'hls',
+                '-hls_time', '4',
+                '-hls_playlist_type', 'event',
+                M3U8_FILE
+            ]
+
+            # Start the FFmpeg processes
+            ffmpeg_stream_processed_process = subprocess.Popen(ffmpeg_stream_processed_command, stdin=subprocess.PIPE)
+            ffmpeg_processed_to_hls_process = subprocess.Popen(ffmpeg_processed_to_hls_command)
 
             ret, previous_frame = streamer.read()  # previous_frame is an np.array
             t1 = time.time()  # Start time of previous_frame
@@ -138,17 +155,19 @@ def create_app():
                 # frame_time = t2 - t1
                 # segment.append((previous_frame, frame_time))
                 # segment_duration = segment_duration + frame_time
-                ffmpeg_process.stdin.write(previous_frame)
+                ffmpeg_stream_processed_process.stdin.write(previous_frame)
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
                 t1 = t2
                 time.sleep(1/64)
 
-            print("Not processing frames")
+            print("Not processing frames sleeping for 3s")
             streamer.release()
-            ffmpeg_process.stdin.close()  # Close stdin pipe
-            ffmpeg_process.wait()
+            ffmpeg_stream_processed_process.stdin.close()  # Close stdin pipe
+            ffmpeg_stream_processed_process.wait()
+            ffmpeg_processed_to_hls_process.stdin.close()
+            ffmpeg_processed_to_hls_process.wait()
             time.sleep(3)
 
     # Thread
