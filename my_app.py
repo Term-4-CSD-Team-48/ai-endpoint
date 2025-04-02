@@ -145,6 +145,7 @@ def ping():
 @app.route('/prompt', methods=['POST'])
 def prompt():
     global sam
+    print(f"Received request at /prompt")
     data = request.get_json()  # Extract JSON data from the request
     client_ip = request.headers.get('X-Forward-For', request.remote_addr)
     print(f"Received request at /prompt from {client_ip} with {data}")
@@ -177,8 +178,9 @@ def auth_request():
 
 
 @app.route('/observe', methods=['POST'])
-def set_owner():
+def observe():
     global owner_id
+    print(f"Received request at /observe")
     client_ip = request.headers.get('X-Forward-For', request.remote_addr)
     print(f"Received request at /observe from {client_ip}")
     if not client_ip.startswith("10.0"):
