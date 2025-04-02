@@ -31,12 +31,14 @@ sam = SamTracker()
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 
+owner_id = None
+
 
 def create_app():
     app = Flask(__name__)
 
     # Thread
-    def get_and_process_frames():
+    def process_to_hls():
         global sam
         while True:
             print("Connecting to RTMP server...")
@@ -126,8 +128,8 @@ def create_app():
             ffmpeg_processed_to_hls_process.wait()
             time.sleep(3)
 
-    get_and_process_frames_thread = threading.Thread(target=get_and_process_frames, daemon=True)
-    get_and_process_frames_thread.start()
+    thread = threading.Thread(target=process_to_hls, daemon=True)
+    thread.start()
     return app
 
 
@@ -140,12 +142,12 @@ def ping():
     return "healthy" if torch.cuda.is_available() and sam else "unhealthy"
 
 
-@app.route('/invocations', methods=['POST'])
-def invocations():
+@app.route('/prompt', methods=['POST'])
+def prompt():
     global sam
     data = request.get_json()  # Extract JSON data from the request
     client_ip = request.headers.get('X-Forward-For', request.remote_addr)
-    print(f"Received request at /invocations from {client_ip} with {data}")
+    print(f"Received request at /prompt from {client_ip} with {data}")
     if not client_ip.startswith("10.0"):
         return "outsiders not allowed", 403
     if not data['x'] or not data['y']:
@@ -159,6 +161,32 @@ def invocations():
     sam.points = np.array([[data['x'], data['y']]], dtype=np.float32)
 
     return "changed points", 200
+
+
+@app.route('/auth_request', methods=['GET'])
+def auth_request():
+    print('Received request at /auth_request')
+    global owner_id
+    cookie_value = request.cookies.get('JSESSIONID', None)
+    return "ok"
+    if cookie_value is None:
+        return "no owner id", 401
+    if cookie_value != owner_id:
+        return "forbidden", 403
+    return "ok"
+
+
+@app.route('/observe', methods=['POST'])
+def set_owner():
+    global owner_id
+    client_ip = request.headers.get('X-Forward-For', request.remote_addr)
+    print(f"Received request at /observe from {client_ip}")
+    if not client_ip.startswith("10.0"):
+        return "outsiders not allowed", 403
+    data = request.get_json()
+    if data['jSessionId'] is None:
+        return "no owner id", 400
+    owner_id = data['jSessionId']
 
 
 if __name__ == '__main__':
