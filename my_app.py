@@ -2,20 +2,13 @@ import torch
 import numpy as np
 import threading
 import cv2
-from io import BytesIO
-from PIL import Image
 import subprocess
-import base64
-import json
-import atexit
 from flask import Flask, request, jsonify
 import os
 import time
-from queue import Queue
 
 from streamer import Streamer
-from sam_tracker import SamTracker
-from sam2.build_sam import build_sam2_camera_predictor
+from tracker import Tracker
 
 # use bfloat16 for the entire notebook
 torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
@@ -26,7 +19,7 @@ if torch.cuda.get_device_properties(0).major >= 8:
     torch.backends.cudnn.allow_tf32 = True
 
 # build model
-sam = SamTracker()
+sam = Tracker()
 
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
@@ -53,22 +46,22 @@ def create_app():
             print("Connected to RTMP server!")
             time.sleep(1)  # Required to relinquish control to streamer thread to get first frame
 
-            # Set up FFmpeg command to stream processed frames to RTMP
-            ffmpeg_stream_processed_command = [
-                'ffmpeg',
-                '-re',
-                '-f', 'rawvideo',  # Raw video format (no container)
-                '-s', '640x360',  # Input resolution
-                '-pixel_format', 'bgr24',
-                '-i', '-',  # Input from stdin (pipe)
-                '-r', '10',
-                '-pix_fmt', 'yuv420p',
-                '-c:v', 'libx264',  # Video codec (H.264)
-                '-bufsize', '64M',
-                '-maxrate', '4M',
-                '-f', 'flv',  # Output format for streaming
-                'rtmp://127.0.0.1/live/processed',  # RTMP URL
-            ]
+            # # Set up FFmpeg command to stream processed frames to RTMP
+            # ffmpeg_stream_processed_command = [
+            #     'ffmpeg',
+            #     '-re',
+            #     '-f', 'rawvideo',  # Raw video format (no container)
+            #     '-s', '640x360',  # Input resolution
+            #     '-pixel_format', 'bgr24',
+            #     '-i', '-',  # Input from stdin (pipe)
+            #     '-r', '10',
+            #     '-pix_fmt', 'yuv420p',
+            #     '-c:v', 'libx264',  # Video codec (H.264)
+            #     '-bufsize', '64M',
+            #     '-maxrate', '4M',
+            #     '-f', 'flv',  # Output format for streaming
+            #     'rtmp://127.0.0.1/live/processed',  # RTMP URL
+            # ]
 
             ffmpeg_stream_processed_command = [
                 'ffmpeg',
@@ -89,22 +82,22 @@ def create_app():
                 M3U8_FILE
             ]
 
-            # Set up FFmpeg command to convert processed frames to HLS
-            ffmpeg_processed_to_hls_command = [
-                'ffmpeg',
-                '-re',
-                '-i', 'rtmp://127.0.0.1/live/processed',
-                '-c:v', 'libx264',
-                '-crf', '26',  # 51 is worst 1 is best
-                '-preset', 'ultrafast',
-                '-g', '10',
-                '-sc_threshold', '0',
-                '-f', 'hls',
-                '-hls_time', '4',
-                '-hls_flags', 'independent_segments',
-                '-hls_playlist_type', 'event',
-                M3U8_FILE
-            ]
+            # # Set up FFmpeg command to convert processed frames to HLS
+            # ffmpeg_processed_to_hls_command = [
+            #     'ffmpeg',
+            #     '-re',
+            #     '-i', 'rtmp://127.0.0.1/live/processed',
+            #     '-c:v', 'libx264',
+            #     '-crf', '26',  # 51 is worst 1 is best
+            #     '-preset', 'ultrafast',
+            #     '-g', '10',
+            #     '-sc_threshold', '0',
+            #     '-f', 'hls',
+            #     '-hls_time', '4',
+            #     '-hls_flags', 'independent_segments',
+            #     '-hls_playlist_type', 'event',
+            #     M3U8_FILE
+            # ]
 
             # Start the FFmpeg processes
             ffmpeg_stream_processed_process = subprocess.Popen(ffmpeg_stream_processed_command, stdin=subprocess.PIPE)
@@ -135,16 +128,14 @@ def create_app():
                 # Turn previous_frame to bytes for ffmpeg processing
                 ffmpeg_stream_processed_process.stdin.write(previous_frame.tobytes())
 
-                # Set previous_frame to current_frame and t1 to t2
+                # Set previous_frame to current_frame
                 previous_frame = current_frame
                 time.sleep(1/64)
 
-            print("Not processing frames sleeping for 3s")
             streamer.release()
             ffmpeg_stream_processed_process.stdin.close()  # Close stdin pipe
             ffmpeg_stream_processed_process.wait()
-            # ffmpeg_processed_to_hls_process.stdin.close()
-            # ffmpeg_processed_to_hls_process.wait()
+            print("Not processing frames sleeping for 3s")
             time.sleep(3)
 
     thread = threading.Thread(target=process_to_hls, daemon=True)

@@ -14,7 +14,7 @@ if torch.cuda.get_device_properties(0).major >= 8:
     torch.backends.cudnn.allow_tf32 = True
 
 
-class SamTracker:
+class Tracker:
     def __init__(self):
         sam2_checkpoint = "checkpoints/sam2.1_hiera_tiny.pt"
         model_cfg = "configs/sam2.1/sam2.1_hiera_t.yaml"
