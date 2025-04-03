@@ -190,6 +190,7 @@ def observe():
         return "no owner id", 400
     sam._observer_ip = client_ip
     observer_id = data['jSessionId']
+    return "ok"
 
 
 if __name__ == '__main__':
