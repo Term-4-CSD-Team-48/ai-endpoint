@@ -31,7 +31,7 @@ sam = SamTracker()
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
 
-owner_id = None
+observer_id = None
 
 
 def create_app():
@@ -147,7 +147,7 @@ def prompt():
     global sam
     print(f"Received request at /prompt")
     data = request.get_json()  # Extract JSON data from the request
-    client_ip = request.headers.get('X-Forward-For', request.remote_addr)
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     print(f"Received request at /prompt from {client_ip} with {data}")
     if not client_ip.startswith("10.0"):
         return "outsiders not allowed", 403
@@ -167,19 +167,19 @@ def prompt():
 @app.route('/auth_request', methods=['GET'])
 def auth_request():
     print('Received request at /auth_request')
-    global owner_id
+    global observer_id
     cookie_value = request.cookies.get('JSESSIONID', None)
     return "ok"
     if cookie_value is None:
         return "no owner id", 401
-    if cookie_value != owner_id:
+    if cookie_value != observer_id:
         return "forbidden", 403
     return "ok"
 
 
 @app.route('/observe', methods=['POST'])
 def observe():
-    global owner_id
+    global observer_id
     print(f"Received request at /observe")
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     print(f"Received request at /observe from {client_ip}")
@@ -188,7 +188,8 @@ def observe():
     data = request.get_json()
     if data['jSessionId'] is None:
         return "no owner id", 400
-    owner_id = data['jSessionId']
+    sam._observer_ip = client_ip
+    observer_id = data['jSessionId']
 
 
 if __name__ == '__main__':

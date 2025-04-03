@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import cv2
+import requests
 
 from sam2.build_sam import build_sam2_camera_predictor
 
@@ -21,6 +22,8 @@ class SamTracker:
         self._points = np.array([[0, 0]], dtype=np.float32)
         self.labels = np.array([1], dtype=np.int32)
         self.changed_points = False
+        self._observer_ip = ""
+        self._object_on_screen = True
 
     def prompt_first_frame(self, frame):
         points = self.points
@@ -29,7 +32,7 @@ class SamTracker:
         _, out_obj_ids, out_mask_logits = self._sam.add_new_prompt(
             frame_idx=0, obj_id=1, points=points, labels=labels
         )
-        return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
+        return self._draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
 
     def track(self, frame):
         points = self.points
@@ -44,9 +47,9 @@ class SamTracker:
             _, out_obj_ids, out_mask_logits = self._sam.add_new_prompt(
                 frame_idx=0, obj_id=1, points=points, labels=labels
             )
-        return self.draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
+        return self._draw_masks_and_points_on_frame(frame, out_obj_ids, out_mask_logits, points)
 
-    def draw_masks_and_points_on_frame(self, frame, out_obj_ids, out_mask_logits, points):
+    def _draw_masks_and_points_on_frame(self, frame, out_obj_ids, out_mask_logits, points):
         # Masks
         height, width = frame.shape[:2]
         all_mask = np.zeros((height, width, 1), dtype=np.uint8)
@@ -65,10 +68,18 @@ class SamTracker:
         # Convert back to RGB
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Check if object is on screen
+        # Check if object is on screen and trigger _on_update
         object_on_screen = bool(np.any(out_mask))
+        self._on_update(object_on_screen)
 
         return frame, object_on_screen
+
+    def _on_update(self, object_on_screen):
+        if self._object_on_screen != object_on_screen:
+            print("updating observer " + self.observer_ip)
+            self._object_on_screen = object_on_screen
+            data = {"objectOnScreen": object_on_screen}
+            requests.post(f"http://{self.observer_ip}:8080/ai/on-update", json=data)
 
     def get_points(self):
         return self._points
@@ -81,4 +92,11 @@ class SamTracker:
         self.changed_points = True
         self._points = points
 
+    def get_observer_ip(self):
+        return self._observer_ip
+
+    def set_observer_ip(self, ip):
+        self._observer_ip = ip
+
     points = property(get_points, set_points)
+    observer_ip = property(get_observer_ip, set_observer_ip)
