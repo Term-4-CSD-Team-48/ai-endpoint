@@ -75,6 +75,7 @@ class SamTracker:
         return frame, object_on_screen
 
     def _on_update(self, object_on_screen):
+        print(f"self._object_on_screen: {self._object_on_screen}")
         print(f"object_on_screen: {object_on_screen}")
         if self._object_on_screen != object_on_screen:
             print("updating observer " + self.observer_ip)
