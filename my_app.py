@@ -70,6 +70,25 @@ def create_app():
                 'rtmp://127.0.0.1/live/processed',  # RTMP URL
             ]
 
+            ffmpeg_stream_processed_command = [
+                'ffmpeg',
+                '-use_wallclock_as_timestamps', '1',
+                '-f', 'rawVideo',
+                '-s', '640x360',
+                '-pixel_format', 'bgr24',
+                '-i', '-',
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-crf', '26',  # 51 is worst 1 is best
+                '-preset', 'ultrafast',
+                '-sc_threshold', '0',
+                '-f', 'hls',
+                '-hls_time', '4',
+                '-hls_flags', 'independent_segments',
+                '-hls_playlist_type', 'event',
+                M3U8_FILE
+            ]
+
             # Set up FFmpeg command to convert processed frames to HLS
             ffmpeg_processed_to_hls_command = [
                 'ffmpeg',
@@ -89,7 +108,7 @@ def create_app():
 
             # Start the FFmpeg processes
             ffmpeg_stream_processed_process = subprocess.Popen(ffmpeg_stream_processed_command, stdin=subprocess.PIPE)
-            ffmpeg_processed_to_hls_process = subprocess.Popen(ffmpeg_processed_to_hls_command)
+            # ffmpeg_processed_to_hls_process = subprocess.Popen(ffmpeg_processed_to_hls_command)
 
             ret, previous_frame = streamer.read()  # previous_frame is an np.array
             if not ret:
@@ -114,7 +133,7 @@ def create_app():
                 current_frame, object_on_screen = sam.track(current_frame)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                ffmpeg_stream_processed_process.stdin.write(previous_frame)
+                ffmpeg_stream_processed_process.stdin.write(previous_frame.tobytes())
 
                 # Set previous_frame to current_frame and t1 to t2
                 previous_frame = current_frame
@@ -124,8 +143,8 @@ def create_app():
             streamer.release()
             ffmpeg_stream_processed_process.stdin.close()  # Close stdin pipe
             ffmpeg_stream_processed_process.wait()
-            ffmpeg_processed_to_hls_process.stdin.close()
-            ffmpeg_processed_to_hls_process.wait()
+            # ffmpeg_processed_to_hls_process.stdin.close()
+            # ffmpeg_processed_to_hls_process.wait()
             time.sleep(3)
 
     thread = threading.Thread(target=process_to_hls, daemon=True)
