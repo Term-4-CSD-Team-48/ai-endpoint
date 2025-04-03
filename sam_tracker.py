@@ -98,6 +98,7 @@ class SamTracker:
         return self._observer_ip
 
     def set_observer_ip(self, ip):
+        print("setting observer ip " + ip)
         self._observer_ip = ip
 
     points = property(get_points, set_points)
