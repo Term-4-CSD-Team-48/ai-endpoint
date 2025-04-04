@@ -79,7 +79,8 @@ class Tracker:
             print("updating observer " + self.observer_ip)
             self._object_on_screen = object_on_screen
             data = {"objectOnScreen": object_on_screen}
-            requests.post(f"http://{self.observer_ip}:8080/ai/on-update", json=data)
+            if self.observer_ip is not None:
+                requests.post(f"http://{self.observer_ip}:8080/ai/on-update", json=data)
 
     def get_points(self):
         return self._points
