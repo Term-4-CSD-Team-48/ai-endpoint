@@ -10,16 +10,7 @@ import time
 from streamer import Streamer
 from tracker import Tracker
 
-# use bfloat16 for the entire notebook
-torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-if torch.cuda.get_device_properties(0).major >= 8:
-    # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-
-# build model
-sam = Tracker()
+tracker = Tracker()
 
 HLS_DIR = "/mnt/hls"
 M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
@@ -32,7 +23,7 @@ def create_app():
 
     # Thread
     def process_to_hls():
-        global sam
+        global tracker
         while True:
             print("Connecting to RTMP server...")
             streamer = Streamer("rtmp://127.0.0.1/live/stream")
@@ -111,7 +102,7 @@ def create_app():
             height, width = previous_frame.shape[:2]
             print(f"Width: {width}, Height: {height}")
             previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-            previous_frame, object_on_screen = sam.prompt_first_frame(previous_frame)
+            previous_frame, object_on_screen = tracker.prompt_first_frame(previous_frame)
 
             while True:
                 # Get latest frame
@@ -123,7 +114,7 @@ def create_app():
 
                 # Process current_frame with SAM and draw mask and point on it
                 current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-                current_frame, object_on_screen = sam.track(current_frame)
+                current_frame, object_on_screen = tracker.track(current_frame)
 
                 # Turn previous_frame to bytes for ffmpeg processing
                 ffmpeg_stream_processed_process.stdin.write(previous_frame.tobytes())
@@ -149,12 +140,12 @@ app = create_app()
 @app.route('/ping', methods=['GET'])
 def ping():
     print(f"Received request at /ping from {request.headers.get('X-Forwarded-For', request.remote_addr)}")
-    return "healthy" if torch.cuda.is_available() and sam else "unhealthy"
+    return "healthy" if torch.cuda.is_available() and tracker else "unhealthy"
 
 
 @app.route('/prompt', methods=['POST'])
 def prompt():
-    global sam
+    global tracker
     print(f"Received request at /prompt")
     data = request.get_json()  # Extract JSON data from the request
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -169,7 +160,7 @@ def prompt():
     # if cookie_value is None:
     #     return "unauthorized", 401
 
-    sam.points = np.array([[data['x'], data['y']]], dtype=np.float32)
+    tracker.points = np.array([[data['x'], data['y']]], dtype=np.float32)
 
     return "changed points", 200
 
@@ -198,7 +189,7 @@ def observe():
     data = request.get_json()
     if data['jSessionId'] is None:
         return "no owner id", 400
-    sam._observer_ip = client_ip
+    tracker._observer_ip = client_ip
     observer_id = data['jSessionId']
     return "ok"
 
