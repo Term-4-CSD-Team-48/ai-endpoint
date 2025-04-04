@@ -8,12 +8,11 @@ import os
 import time
 
 from streamer import Streamer
-from tracker import Tracker
+from tracker import Tracker, BGRToTrackerAdapter
+from processes import RGBFramesToHLSProcess
 
 tracker = Tracker()
-
-HLS_DIR = "/mnt/hls"
-M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
+bgr_to_tracker_adapter = BGRToTrackerAdapter(tracker)
 
 observer_id = None
 
@@ -22,10 +21,9 @@ def create_app():
     app = Flask(__name__)
 
     # Thread
-    def process_to_hls():
+    def rtmp_to_ai_to_hls_thread():
         global tracker
         while True:
-            print("Connecting to RTMP server...")
             streamer = Streamer("rtmp://127.0.0.1/live/stream")
 
             if not streamer.isOpened():
@@ -37,72 +35,15 @@ def create_app():
             print("Connected to RTMP server!")
             time.sleep(1)  # Required to relinquish control to streamer thread to get first frame
 
-            # # Set up FFmpeg command to stream processed frames to RTMP
-            # ffmpeg_stream_processed_command = [
-            #     'ffmpeg',
-            #     '-re',
-            #     '-f', 'rawvideo',  # Raw video format (no container)
-            #     '-s', '640x360',  # Input resolution
-            #     '-pixel_format', 'bgr24',
-            #     '-i', '-',  # Input from stdin (pipe)
-            #     '-r', '10',
-            #     '-pix_fmt', 'yuv420p',
-            #     '-c:v', 'libx264',  # Video codec (H.264)
-            #     '-bufsize', '64M',
-            #     '-maxrate', '4M',
-            #     '-f', 'flv',  # Output format for streaming
-            #     'rtmp://127.0.0.1/live/processed',  # RTMP URL
-            # ]
-
-            ffmpeg_stream_processed_command = [
-                'ffmpeg',
-                '-use_wallclock_as_timestamps', '1',
-                '-f', 'rawVideo',
-                '-s', '640x360',
-                '-pixel_format', 'bgr24',
-                '-i', '-',
-                '-c:v', 'libx264',
-                '-pix_fmt', 'yuv420p',
-                '-crf', '26',  # 51 is worst 1 is best
-                '-preset', 'ultrafast',
-                '-sc_threshold', '0',
-                '-f', 'hls',
-                '-hls_time', '4',
-                '-hls_flags', 'independent_segments',
-                '-hls_playlist_type', 'event',
-                M3U8_FILE
-            ]
-
-            # # Set up FFmpeg command to convert processed frames to HLS
-            # ffmpeg_processed_to_hls_command = [
-            #     'ffmpeg',
-            #     '-re',
-            #     '-i', 'rtmp://127.0.0.1/live/processed',
-            #     '-c:v', 'libx264',
-            #     '-crf', '26',  # 51 is worst 1 is best
-            #     '-preset', 'ultrafast',
-            #     '-g', '10',
-            #     '-sc_threshold', '0',
-            #     '-f', 'hls',
-            #     '-hls_time', '4',
-            #     '-hls_flags', 'independent_segments',
-            #     '-hls_playlist_type', 'event',
-            #     M3U8_FILE
-            # ]
-
-            # Start the FFmpeg processes
-            ffmpeg_stream_processed_process = subprocess.Popen(ffmpeg_stream_processed_command, stdin=subprocess.PIPE)
-            # ffmpeg_processed_to_hls_process = subprocess.Popen(ffmpeg_processed_to_hls_command)
+            # Start the FFmpeg process
+            process = RGBFramesToHLSProcess()
 
             ret, previous_frame = streamer.read()  # previous_frame is an np.array
             if not ret:
                 raise Exception("Failed to get first frame!")
 
             # Sam processes first frame and draw mask and point on it
-            height, width = previous_frame.shape[:2]
-            print(f"Width: {width}, Height: {height}")
-            previous_frame = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-            previous_frame, object_on_screen = tracker.prompt_first_frame(previous_frame)
+            previous_frame, _ = bgr_to_tracker_adapter.prompt_first_frame(previous_frame)
 
             while True:
                 # Get latest frame
@@ -113,23 +54,21 @@ def create_app():
                     break
 
                 # Process current_frame with SAM and draw mask and point on it
-                current_frame = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)  # SAM processes in RGB
-                current_frame, object_on_screen = tracker.track(current_frame)
+                current_frame, _ = bgr_to_tracker_adapter.track(current_frame)
 
                 # Turn previous_frame to bytes for ffmpeg processing
-                ffmpeg_stream_processed_process.stdin.write(previous_frame.tobytes())
+                process.write(previous_frame.tobytes())
 
                 # Set previous_frame to current_frame
                 previous_frame = current_frame
                 time.sleep(1/64)
 
             streamer.release()
-            ffmpeg_stream_processed_process.stdin.close()  # Close stdin pipe
-            ffmpeg_stream_processed_process.wait()
+            process.release()
             print("Not processing frames sleeping for 3s")
             time.sleep(3)
 
-    thread = threading.Thread(target=process_to_hls, daemon=True)
+    thread = threading.Thread(target=rtmp_to_ai_to_hls_thread, daemon=True)
     thread.start()
     return app
 

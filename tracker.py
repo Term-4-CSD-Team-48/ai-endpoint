@@ -75,8 +75,6 @@ class Tracker:
         return frame, object_on_screen
 
     def _on_update(self, object_on_screen):
-        print(f"self._object_on_screen: {self._object_on_screen}")
-        print(f"object_on_screen: {object_on_screen}")
         if self._object_on_screen != object_on_screen:
             print("updating observer " + self.observer_ip)
             self._object_on_screen = object_on_screen
@@ -103,3 +101,17 @@ class Tracker:
 
     points = property(get_points, set_points)
     observer_ip = property(get_observer_ip, set_observer_ip)
+
+
+class BGRToTrackerAdapter:
+    def __init__(self, tracker: Tracker):
+        self.tracker = tracker
+
+    def _bgr_frame_to_rgb_frame(self, frame):
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    def prompt_first_frame(self, frame):
+        return self.tracker.prompt_first_frame(self._bgr_frame_to_rgb_frame(frame))
+
+    def track(self, frame):
+        return self.tracker.track(self._bgr_frame_to_rgb_frame(frame))

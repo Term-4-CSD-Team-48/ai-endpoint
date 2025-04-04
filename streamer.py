@@ -6,6 +6,7 @@ from threading import Thread
 
 class Streamer:
     def __init__(self, url):
+        print(f"Opening cap on {url}...")
         self._cap = cv2.VideoCapture(url)
         if self._cap.isOpened():
             self._thread = Thread(target=self._update, daemon=True)
