@@ -15,6 +15,7 @@ class RGBFramesToHLSProcess:
             '-i', '-',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
+            '-g', '25',  # default output fps is 25
             '-crf', '26',  # 51 is worst 1 is best
             '-preset', 'ultrafast',
             '-sc_threshold', '0',
