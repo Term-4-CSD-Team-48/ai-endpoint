@@ -128,7 +128,7 @@ def observe():
     data = request.get_json()
     if data['jSessionId'] is None:
         return "no owner id", 400
-    tracker._observer_ip = client_ip
+    tracker.observer_ip = client_ip
     observer_id = data['jSessionId']
     return "ok"
 
