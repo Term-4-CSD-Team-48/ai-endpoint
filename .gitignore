@@ -8,3 +8,6 @@ build/*
 _C.*
 outputs/*
 checkpoints/*.pt
+*.mov
+*.avi
+test_myapp.py
