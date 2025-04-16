@@ -121,14 +121,14 @@ def auth_request():
 def observe():
     # global observer_id
     # print(f"Received request at /observe")
-    # client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     # print(f"Received request at /observe from {client_ip}")
     # if not client_ip.startswith("10.0"):
     #     return "outsiders not allowed", 403
     # data = request.get_json()
     # if data['jSessionId'] is None:
     #     return "no owner id", 400
-    # tracker.observer_ip = client_ip
+    tracker.observer_ip = client_ip
     # observer_id = data['jSessionId']
     return "ok"
 
