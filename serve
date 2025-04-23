@@ -42,8 +42,8 @@ def start_server():
     print('Starting the inference server with {} workers.'.format(
         model_server_workers))
 
-    nginx = subprocess.Popen(['nginx', '-c', '/home/ubuntu/ai-endpoint/nginx.conf'])
-    gunicorn = subprocess.Popen(['/home/ubuntu/ai-endpoint/.venv/bin/gunicorn',
+    nginx = subprocess.Popen(['nginx', '-c', '/app/nginx.conf'])
+    gunicorn = subprocess.Popen(['gunicorn',
                                  '--timeout', str(model_server_timeout),
                                  '-k', 'sync',
                                  '-b', 'unix:/tmp/gunicorn.sock',
