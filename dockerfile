@@ -1,5 +1,5 @@
 # Use NVIDIA CUDA base image with Ubuntu
-FROM nvidia/cuda:12.4.0-devel-ubuntu20.04
+FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 as builder
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
