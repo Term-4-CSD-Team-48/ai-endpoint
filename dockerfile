@@ -1,46 +1,86 @@
 # Use NVIDIA CUDA base image with Ubuntu
-FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
-
-# Set environment variables to avoid interactive prompts during installation
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=UTC
+FROM ubuntu:20.04 as builder
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
     zlib1g-dev \
-    libncurses5-dev \
-    libgdbm-dev \
-    libnss3-dev \
     libssl-dev \
-    libsqlite3-dev \
-    libreadline-dev \
     libffi-dev \
-    curl \
     libbz2-dev \
-    nginx \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install Python 3.10.0
+# Set workdir to /tmp
 WORKDIR /tmp
+
+# Download and install Python 3.10.0
 RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     tar -xf Python-3.10.0.tgz && \
     cd Python-3.10.0 && \
-    ./configure --enable-optimizations && \
+    ./configure --enable-optimizations --prefix=/opt/python3.10 && \
     make -j $(nproc) && \
-    make altinstall && \
-    ln -sf /usr/local/bin/python3.10 /usr/local/bin/python3 && \
-    ln -sf /usr/local/bin/python3.10 /usr/local/bin/python && \
+    make install && \
     rm -rf /tmp/Python-3.10.0*
 
-# Install pip
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3 get-pip.py && \
-    rm get-pip.py
+# Download .pt files from ./checkpoints
+COPY checkpoints ./
+RUN ./checkpoints/download_ckpts.sh
 
-# Install PyTorch and torchvision with CUDA support
-RUN pip3 install torch>=2.3.1 torchvision>=0.18.1
+# Final stage - smaller runtime image
+FROM nvidia/cuda:12.1.0-runtime-ubuntu20.04
+
+# Set workdir to /app
+WORKDIR /app
+
+# Copy Python from builder stage
+COPY --from=builder /opt/python3.10 /opt/python3.10
+
+# Set up Python symlinks
+RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
+    ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python && \
+    ln -sf /opt/python3.10/bin/pip3.10 /usr/local/bin/pip3 && \
+    ln -sf /opt/python3.10/bin/pip3.10 /usr/local/bin/pip
+
+# Copy .pt files from builder stage
+COPY --from=builder /tmp/checkpoints ./
+
+# Install nginx
+RUN apt-get update && apt-get install -y \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify installations
+RUN python3 --version && \
+    pip3 --version && \
+    nginx -v
+
+# Set up dir to copy project files
+COPY .clang-format \
+    clang-format.txt \
+    CODE_OF_CONDUCT.md \
+    CONTRIBUTING.md \
+    LICENSE \ 
+    LICENSE_cctorch \ 
+    my_app.py \
+    nginx.conf \
+    processes.py \
+    pyproject.toml \
+    README.md \
+    sam2 \
+    serve \
+    serve.sh \
+    setup.py \
+    streamer.py \
+    tracker.py \
+    wsgi.py \
+    ./
+
+# Expose port for nginx
+EXPOSE 8080
+
+# Expose port for RTMP
+EXPOSE 1935
 
 # Set the entrypoint
 ENTRYPOINT ["/serve.sh"]
