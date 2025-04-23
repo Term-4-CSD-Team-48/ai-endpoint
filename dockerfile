@@ -24,7 +24,7 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     rm -rf /tmp/Python-3.10.0*
 
 # Download .pt files from ./checkpoints
-COPY checkpoints ./
+COPY checkpoints ./checkpoints
 RUN ./checkpoints/download_ckpts.sh
 
 # Final stage - smaller runtime image
@@ -75,6 +75,8 @@ COPY .clang-format \
     tracker.py \
     wsgi.py \
     ./
+
+RUN pip install -e .
 
 # Expose port for nginx
 EXPOSE 8080
