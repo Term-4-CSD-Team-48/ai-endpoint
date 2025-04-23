@@ -1,4 +1,4 @@
-#!/home/ubuntu/ai-endpoint/.venv/bin/python
+#!/usr/local/bin/python
 
 # This file implements the scoring service shell. You don't necessarily need to modify it for various
 # algorithms. It starts nginx and gunicorn with the correct configurations and then simply waits until
