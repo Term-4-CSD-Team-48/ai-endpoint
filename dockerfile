@@ -1,14 +1,15 @@
 # Use NVIDIA CUDA base image with Ubuntu
-FROM ubuntu:20.04 as builder
+FROM nvidia/cuda:12.4.0-devel-ubuntu20.04
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
-    wget \
     build-essential \
-    zlib1g-dev \
-    libssl-dev \
-    libffi-dev \
+    g++ \ 
     libbz2-dev \
+    libffi-dev \
+    libssl-dev \
+    wget \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set workdir to /tmp
@@ -23,60 +24,45 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     make install && \
     rm -rf /tmp/Python-3.10.0*
 
-# Download .pt files from ./checkpoints
-COPY checkpoints ./checkpoints
-RUN ./checkpoints/download_ckpts.sh
-
-# Final stage - smaller runtime image
-FROM nvidia/cuda:12.1.0-runtime-ubuntu20.04
-
 # Set workdir to /app
 WORKDIR /app
 
+# Copy everything
+COPY . . 
+
+# Download .pt files from ./checkpoints
+RUN ./checkpoints/download_ckpts.sh
+
+# Build project
+RUN pip3 install torch torchvision torchaudio
+RUN pip3 install -e .
+
+# Final stage - smaller runtime image
+FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
+
 # Copy Python from builder stage
 COPY --from=builder /opt/python3.10 /opt/python3.10
+
+# Set workdir to /app
+WORKDIR /app
 
 # Set up Python symlinks
 RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python && \
     ln -sf /opt/python3.10/bin/pip3.10 /usr/local/bin/pip3 && \
-    ln -sf /opt/python3.10/bin/pip3.10 /usr/local/bin/pip
+    ln -sf /opt/python3.10/bin/pip3.10 /usr/local/bin/pip && \
+    python --version && \
+    python3 --version && \
+    pip --version && \
+    pip3 --version 
 
-# Copy .pt files from builder stage
-COPY --from=builder /tmp/checkpoints ./
+# Copy built project
+COPY --from=builder /app ./app
 
 # Install nginx
 RUN apt-get update && apt-get install -y \
     nginx \
-    && rm -rf /var/lib/apt/lists/*
-
-# Verify installations
-RUN python3 --version && \
-    pip3 --version && \
-    nginx -v
-
-# Set up dir to copy project files
-COPY .clang-format \
-    clang-format.txt \
-    CODE_OF_CONDUCT.md \
-    CONTRIBUTING.md \
-    LICENSE \ 
-    LICENSE_cctorch \ 
-    my_app.py \
-    nginx.conf \
-    processes.py \
-    pyproject.toml \
-    README.md \
-    sam2 \
-    serve \
-    serve.sh \
-    setup.py \
-    streamer.py \
-    tracker.py \
-    wsgi.py \
-    ./
-
-RUN pip install -e .
+    && rm -rf /var/lib/apt/lists/* && nginx -v
 
 # Expose port for nginx
 EXPOSE 8080
@@ -84,5 +70,8 @@ EXPOSE 8080
 # Expose port for RTMP
 EXPOSE 1935
 
+# Make executable serve.sh
+RUN chmod +x ./serve.sh
+
 # Set the entrypoint
-ENTRYPOINT ["/serve.sh"]
+ENTRYPOINT ["./serve.sh"]
