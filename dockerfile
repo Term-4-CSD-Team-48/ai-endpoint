@@ -24,6 +24,9 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     make install && \
     rm -rf /tmp/Python-3.10.0*
 
+# Make newly built Python the default
+ENV PATH="/opt/python3.10/bin:$PATH"
+
 # Set workdir to /app
 WORKDIR /app
 
