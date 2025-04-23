@@ -34,8 +34,8 @@ COPY . .
 RUN ./checkpoints/download_ckpts.sh
 
 # Build project
-RUN pip3 install torch torchvision torchaudio
-RUN pip3 install -e .
+RUN python3 -m pip install torch torchvision torchaudio
+RUN python3 -m pip install -e .
 
 # Final stage - smaller runtime image
 FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
