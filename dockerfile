@@ -1,5 +1,5 @@
 # Use NVIDIA CUDA base image with Ubuntu
-FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 as builder
+FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 AS builder
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
@@ -33,12 +33,12 @@ WORKDIR /app
 # Copy everything
 COPY . . 
 
+# Build project
+ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0"
+RUN python3 -m pip install -e .
+
 # Download .pt files from ./checkpoints
 RUN ./checkpoints/download_ckpts.sh
-
-# Build project
-RUN python3 -m pip install torch torchvision torchaudio
-RUN python3 -m pip install -e .
 
 # Final stage - smaller runtime image
 FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
@@ -60,7 +60,7 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     pip3 --version 
 
 # Copy built project
-COPY --from=builder /app ./app
+COPY --from=builder /app ./
 
 # Install nginx
 RUN apt-get update && apt-get install -y \
