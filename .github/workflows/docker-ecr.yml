@@ -29,4 +29,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: public.ecr.aws/l1g2c1s4/50.001:latest
+          tags: public.ecr.aws/l1g2c1s4/50.001:api
