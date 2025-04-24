@@ -1,12 +1,16 @@
-# Use NVIDIA CUDA base image with Ubuntu
+# ----------- Builder Stage ----------- #
 FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 AS builder
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
     build-essential \
+    ca-certificates \ 
+    curl \
+    git \
     g++ \ 
     libbz2-dev \
     libffi-dev \
+    libpcre3-dev \
     libssl-dev \
     wget \
     zlib1g-dev \
@@ -14,6 +18,17 @@ RUN apt-get update && apt-get install -y \
 
 # Set workdir to /tmp
 WORKDIR /tmp
+
+# Download and extract nginx as well as its rtmp-module
+ENV NGINX_VERSION=1.24.0
+RUN curl -O http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
+    tar -zxvf nginx-${NGINX_VERSION}.tar.gz
+RUN git clone https://github.com/arut/nginx-rtmp-module.git
+WORKDIR /tmp/nginx-${NGINX_VERSION}
+RUN ./configure --prefix=/opt/nginx \
+    --with-http_ssl_module \
+    --add-module=../nginx-rtmp-module && \
+    make -j$(nproc) && make install
 
 # Download and install Python 3.10.0
 RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
@@ -33,7 +48,7 @@ WORKDIR /app
 # Copy everything
 COPY . . 
 
-# Build project and install dependencies
+# Build python project and install pip dependencies
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0"
 RUN python3 -m pip install -e .
 RUN python3 -m pip install flask \
@@ -45,11 +60,12 @@ RUN python3 -m pip install flask \
 # Download .pt files from ./checkpoints
 RUN ./checkpoints/download_ckpts.sh
 
-# Final stage - smaller runtime image
+# ----------- Final Stage ----------- #
 FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
 
-# Copy Python from builder stage
+# Copy Python and nginx from builder stage
 COPY --from=builder /opt/python3.10 /opt/python3.10
+COPY --from=builder /opt/nginx /opt/nginx
 
 # Set workdir to /app
 WORKDIR /app
@@ -66,11 +82,6 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
 
 # Copy built project
 COPY --from=builder /app ./
-
-# Install nginx
-RUN apt-get update && apt-get install -y \
-    nginx \
-    && rm -rf /var/lib/apt/lists/* && nginx -v
 
 # Expose port for nginx
 EXPOSE 8080
