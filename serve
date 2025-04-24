@@ -43,7 +43,7 @@ def start_server():
         model_server_workers))
 
     nginx = subprocess.Popen(['nginx', '-c', '/app/nginx.conf'])
-    gunicorn = subprocess.Popen(['gunicorn',
+    gunicorn = subprocess.Popen(['python3', '-m', 'gunicorn',
                                  '--timeout', str(model_server_timeout),
                                  '-k', 'sync',
                                  '-b', 'unix:/tmp/gunicorn.sock',
