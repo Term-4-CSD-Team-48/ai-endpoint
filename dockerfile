@@ -2,6 +2,7 @@
 FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 AS builder
 
 # Install required packages
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     ca-certificates \ 
@@ -17,10 +18,8 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set workdir to /tmp
+# Download and extract nginx as well as its rtmp-module into /tmp
 WORKDIR /tmp
-
-# Download and extract nginx as well as its rtmp-module
 ENV NGINX_VERSION=1.24.0
 RUN curl -O http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
     tar -zxvf nginx-${NGINX_VERSION}.tar.gz
@@ -32,6 +31,7 @@ RUN ./configure --prefix=/opt/nginx \
     make -j$(nproc) && make install
 
 # Download and install Python 3.10.0
+WORKDIR /tmp
 RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     tar -xf Python-3.10.0.tgz && \
     cd Python-3.10.0 && \
@@ -43,10 +43,8 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
 # Make newly built Python the default
 ENV PATH="/opt/python3.10/bin:$PATH"
 
-# Set workdir to /app
+# Copy everything into /app
 WORKDIR /app
-
-# Copy everything
 COPY . . 
 
 # Build python project and install pip dependencies
@@ -59,6 +57,7 @@ RUN python3 -m pip install flask \
     requests 
 
 # Download .pt files from ./checkpoints
+WORKDIR /app/checkpoints
 RUN ./checkpoints/download_ckpts.sh
 
 # ----------- Final Stage ----------- #
@@ -71,9 +70,6 @@ COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libav* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
 
-# Set workdir to /app
-WORKDIR /app
-
 # Set up Python symlinks
 RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python && \
@@ -84,7 +80,8 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     pip --version && \
     pip3 --version 
 
-# Copy built project
+# Copy built project into /app
+WORKDIR /app
 COPY --from=builder /app ./
 
 # Expose port for nginx
