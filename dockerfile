@@ -30,7 +30,7 @@ RUN ./configure --prefix=/opt/nginx \
     --add-module=../nginx-rtmp-module && \
     make -j$(nproc) && make install
 
-# Download and install Python 3.10.0
+# Download and install Python 3.10.0 and add to PATH
 WORKDIR /tmp
 RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     tar -xf Python-3.10.0.tgz && \
@@ -39,8 +39,6 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     make -j $(nproc) && \
     make install && \
     rm -rf /tmp/Python-3.10.0*
-
-# Make newly built Python the default
 ENV PATH="/opt/python3.10/bin:$PATH"
 
 # Copy everything into /app
@@ -79,6 +77,10 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     python3 --version && \
     pip --version && \
     pip3 --version 
+
+# Set up nginx symlink
+RUN ln -s /opt/nginx/sbin/nginx /usr/bin/nginx && \
+    nginx --version
 
 # Copy built project into /app
 WORKDIR /app
