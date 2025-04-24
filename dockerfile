@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     ca-certificates \ 
     curl \
+    ffmpeg \
     git \
     g++ \ 
     libbz2-dev \
@@ -63,9 +64,12 @@ RUN ./checkpoints/download_ckpts.sh
 # ----------- Final Stage ----------- #
 FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
 
-# Copy Python and nginx from builder stage
+# Copy Python, nginx, and FFmpeg  from builder stage
 COPY --from=builder /opt/python3.10 /opt/python3.10
 COPY --from=builder /opt/nginx /opt/nginx
+COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libav* /usr/lib/x86_64-linux-gnu/
+COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
 
 # Set workdir to /app
 WORKDIR /app
