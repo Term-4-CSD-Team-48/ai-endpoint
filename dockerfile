@@ -82,6 +82,9 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
 ENV PATH="/opt/nginx/sbin:${PATH}"
 RUN nginx -v
 
+# Set up nginx logs
+RUN mkdir -p /var/log/nginx
+
 # Copy built project into /app
 WORKDIR /app
 COPY --from=builder /app ./
