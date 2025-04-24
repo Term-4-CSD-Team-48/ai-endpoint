@@ -79,8 +79,8 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     pip3 --version 
 
 # Set up nginx symlink
-RUN ln -s /opt/nginx/sbin/nginx /usr/bin/nginx && \
-    nginx --version
+ENV PATH="/opt/nginx/sbin:${PATH}"
+RUN nginx --version
 
 # Copy built project into /app
 WORKDIR /app
