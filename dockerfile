@@ -80,7 +80,7 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
 
 # Set up nginx symlink
 ENV PATH="/opt/nginx/sbin:${PATH}"
-RUN nginx --version
+RUN nginx -v
 
 # Copy built project into /app
 WORKDIR /app
