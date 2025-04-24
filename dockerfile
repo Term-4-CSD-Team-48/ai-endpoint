@@ -58,7 +58,7 @@ RUN python3 -m pip install flask \
 
 # Download .pt files from ./checkpoints
 WORKDIR /app/checkpoints
-RUN ./checkpoints/download_ckpts.sh
+RUN ./download_ckpts.sh
 
 # ----------- Final Stage ----------- #
 FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
