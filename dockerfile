@@ -27,6 +27,7 @@ RUN git clone https://github.com/arut/nginx-rtmp-module.git
 WORKDIR /tmp/nginx-${NGINX_VERSION}
 RUN ./configure --prefix=/opt/nginx \
     --with-http_ssl_module \
+    --with-http_auth_request_module \
     --add-module=../nginx-rtmp-module && \
     make -j$(nproc) && make install
 
