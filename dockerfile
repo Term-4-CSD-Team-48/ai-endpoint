@@ -36,7 +36,7 @@ COPY . .
 # Build project and install dependencies
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0"
 RUN python3 -m pip install -e .
-RUN pip install flask \
+RUN python3 -m pip install flask \
     gunicorn \
     numpy \
     opencv-python-headless \
