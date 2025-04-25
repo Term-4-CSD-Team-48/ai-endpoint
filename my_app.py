@@ -89,7 +89,7 @@ def prompt():
     data = request.get_json()  # Extract JSON data from the request
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     print(f"Received request at /prompt from {client_ip} with {data}")
-    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168"):
+    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168") and not client_ip.startswith("127.0.0.1"):
         return "outsiders not allowed", 403
     if not data['x'] or not data['y']:
         return "invalid JSON", 400  # Handle case where JSON is missing
@@ -122,7 +122,7 @@ def observe():
     print(f"Received request at /observe")
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     print(f"Received request at /observe from {client_ip}")
-    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168"):
+    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168") and not client_ip.startswith("127.0.0.1"):
         return "outsiders not allowed", 403
     data = request.get_json()
     if data['jSessionId'] is None:
