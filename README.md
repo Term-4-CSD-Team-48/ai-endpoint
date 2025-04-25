@@ -6,11 +6,11 @@
 
 This server has been containerized and is available for pulling with
 
-docker pull public.ecr.aws/l1g2c1s4/50.001:api
+docker pull public.ecr.aws/l1g2c1s4/50.001:ai
 
 The server should be run with
 
-docker run --gpus all -p 8080:8080 -p 1935:1935 public.ecr.aws/l1g2c1s4/50.001:api
+docker run --gpus all -p 8080:8080 -p 1935:1935 public.ecr.aws/l1g2c1s4/50.001:ai
 
 This server listens on ports 1935 RTMP and 8080 HTTP and uses GPU. If your machine
 has no GPU the HTTP server will crash.
