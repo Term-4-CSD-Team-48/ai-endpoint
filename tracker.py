@@ -65,9 +65,6 @@ class Tracker:
         for point in points:
             cv2.circle(frame, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
 
-        # Convert back to RGB
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         # Check if object is on screen and trigger _on_update
         object_on_screen = bool(np.any(out_mask))
         self._on_update(object_on_screen)

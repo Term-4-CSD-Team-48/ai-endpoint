@@ -11,7 +11,7 @@ class RGBFramesToHLSProcess:
             '-use_wallclock_as_timestamps', '1',
             '-f', 'rawVideo',
             '-s', '640x360',
-            '-pixel_format', 'bgr24',
+            '-pixel_format', 'rgb24',
             '-i', '-',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
