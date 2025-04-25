@@ -15,6 +15,22 @@ docker run --gpus all -p 8080:8080 -p 1935:1935 public.ecr.aws/l1g2c1s4/50.001:a
 This server listens on ports 1935 RTMP and 8080 HTTP and uses GPU. If your machine
 has no GPU the HTTP server will crash.
 
+### Streaming the livefeed to the AI server for processing
+
+First obtain the video device names on your machine with
+
+ffmpeg -list_devices true -f dshow -i dummy
+
+Something like [dshow @ 000001f4f2426bc0] "Integrated Camera" (video) will show up. The names
+might differ.
+
+Run this command to start streaming to the RTMP server.
+
+ffmpeg -f dshow -rtbufsize 100M -pixel_format yuyv422 -i video="Integrated Camera" -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
+
+I'm assuming that the AI server is being hosted on the same machine as the streaming machine
+so the IP is 127.0.0.1
+
 ## Issues
 
 ### API receiving 403 responses from POST /prompt and POST /observe
