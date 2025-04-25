@@ -23,6 +23,7 @@ class Tracker:
         self.labels = np.array([1], dtype=np.int32)
         self.changed_points = False
         self._observer_ip = ""
+        self._observer_port = ""
         self._object_on_screen = True
 
     def prompt_first_frame(self, frame):
@@ -77,7 +78,7 @@ class Tracker:
             self._object_on_screen = object_on_screen
             data = {"objectOnScreen": object_on_screen}
             if self.observer_ip is not None and len(self.observer_ip) > 0:
-                requests.post(f"http://{self.observer_ip}:8000/ai/on-update", json=data)
+                requests.post(f"http://{self.observer_ip}:{self.observer_port}/ai/on-update", json=data)
 
     def get_points(self):
         return self._points
@@ -97,8 +98,16 @@ class Tracker:
         print("setting observer ip " + ip)
         self._observer_ip = ip
 
+    def get_observer_port(self):
+        return self._observer_port
+
+    def set_observer_port(self, port):
+        print("setting observer port " + port)
+        self._observer_port = port
+
     points = property(get_points, set_points)
     observer_ip = property(get_observer_ip, set_observer_ip)
+    observer_port = property(get_observer_port, set_observer_port)
 
 
 class BGRToTrackerAdapter:

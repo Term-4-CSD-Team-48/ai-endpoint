@@ -121,6 +121,7 @@ def observe():
     global observer_id
     print(f"Received request at /observe")
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    client_port = request.headers.get('Remote-Port')
     print(f"Received request at /observe from {client_ip}")
     if not client_ip.startswith("10.0") and not client_ip.startswith("192.168") and not client_ip.startswith("127.0.0.1"):
         return "outsiders not allowed", 403
@@ -128,6 +129,7 @@ def observe():
     if data['jSessionId'] is None:
         return "no owner id", 400
     tracker.observer_ip = client_ip
+    tracker.observer_port = client_port
     observer_id = data['jSessionId']
     return "ok"
 
