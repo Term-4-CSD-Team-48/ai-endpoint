@@ -77,7 +77,7 @@ class Tracker:
             self._object_on_screen = object_on_screen
             data = {"objectOnScreen": object_on_screen}
             if self.observer_ip is not None and len(self.observer_ip) > 0:
-                requests.post(f"http://{self.observer_ip}:8080/ai/on-update", json=data)
+                requests.post(f"http://{self.observer_ip}:8000/ai/on-update", json=data)
 
     def get_points(self):
         return self._points
