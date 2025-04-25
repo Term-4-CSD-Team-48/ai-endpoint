@@ -35,7 +35,7 @@ so the IP is 127.0.0.1
 
 ### API receiving 403 responses from POST /prompt and POST /observe
 
-The AI will return 403 when the request doesn't come from 192.168.0.0/16 or 10.0.0.0/16
+The AI will return 403 when the request doesn't come from 192.168.0.0/16 or 10.0.0.0/16 or localhost
 Please ensure your're hosting the API and AI on the same LAN. The alternative is to
 modify the code to not reject requests that are not from the above local addresses.
 
