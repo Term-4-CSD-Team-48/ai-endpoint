@@ -33,7 +33,7 @@ RUN ./configure --prefix=/opt/nginx \
     --add-module=../nginx-rtmp-module && \
     make -j$(nproc) && make install
 
-# Download and install Python 3.10.0 and add to PATH
+# Download and install Python 3.10.0 and pip and add to PATH
 WORKDIR /tmp
 RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     tar -xf Python-3.10.0.tgz && \
@@ -42,6 +42,9 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     make -j $(nproc) && \
     make install && \
     rm -rf /tmp/Python-3.10.0*
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+    /opt/python3.10/bin/python3 get-pip.py && \
+    rm get-pip.py
 ENV PATH="/opt/python3.10/bin:$PATH"
 
 # Download and build ffmpeg
@@ -66,8 +69,8 @@ COPY . .
 
 # Build python project and install pip dependencies
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0"
-RUN python3 -m pip install -r requirements.txt
 RUN python3 -m pip install -e .
+RUN python3 -m pip install -r requirements.txt
 
 # Download .pt files from ./checkpoints
 WORKDIR /app/checkpoints
