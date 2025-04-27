@@ -65,9 +65,12 @@ FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
 # Copy Python, nginx, and FFmpeg  from builder stage
 COPY --from=builder /opt/python3.10 /opt/python3.10
 COPY --from=builder /opt/nginx /opt/nginx
-COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libav* /usr/lib/x86_64-linux-gnu/
+COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
+
+# More dependencies
+RUN apt-get update && apt-get install -y libpostproc-dev && rm -rf /var/lib/apt/lists/*
 
 # Set up Python symlinks
 RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
