@@ -82,6 +82,9 @@ COPY --from=builder /opt/nginx /opt/nginx
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libav* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
+# FFmpeg dependencies
+RUN apt-get update && apt-get install -y libx264-dev && rm -rf /var/lib/apt/lists/*
+
 # Set up Python symlinks
 RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python && \
