@@ -66,8 +66,8 @@ COPY . .
 
 # Build python project and install pip dependencies
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0"
-RUN python3 -m pip install -e .
 RUN python3 -m pip install -r requirements.txt
+RUN python3 -m pip install -e .
 
 # Download .pt files from ./checkpoints
 WORKDIR /app/checkpoints
