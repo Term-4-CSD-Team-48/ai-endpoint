@@ -51,6 +51,7 @@ RUN ./configure \
     --prefix=/usr/local \
     --disable-shared \
     --enable-static \
+    --enable-libx264 \
     --disable-debug \
     --disable-doc \
     --disable-ffplay \
@@ -68,7 +69,7 @@ RUN python3 -m pip install -e .
 RUN python3 -m pip install flask \
     gunicorn \
     numpy \
-    opencv-python-headless \
+#    opencv-python-headless \
     requests 
 
 # Download .pt files from ./checkpoints
