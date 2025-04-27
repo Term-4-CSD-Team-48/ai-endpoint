@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libpcre3-dev \
     libssl-dev \
+    libx264-dev \ 
     pkg-config \
     wget \
     yasm \
