@@ -7,14 +7,15 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     ca-certificates \ 
     curl \
-    ffmpeg \
     git \
     g++ \ 
     libbz2-dev \
     libffi-dev \
     libpcre3-dev \
     libssl-dev \
+    pkg-config \
     wget \
+    yasm \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,6 +43,21 @@ RUN wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     rm -rf /tmp/Python-3.10.0*
 ENV PATH="/opt/python3.10/bin:$PATH"
 
+# Download and build ffmpeg
+WORKDIR /tmp
+RUN curl -L https://ffmpeg.org/releases/ffmpeg-6.0.tar.gz | tar xz
+WORKDIR /tmp/ffmpeg-6.0
+RUN ./configure \
+    --prefix=/usr/local \
+    --disable-shared \
+    --enable-static \
+    --disable-debug \
+    --disable-doc \
+    --disable-ffplay \
+    --enable-gpl \
+    --enable-postproc \
+    && make -j$(nproc) && make install
+
 # Copy everything into /app
 WORKDIR /app
 COPY . . 
@@ -66,11 +82,7 @@ FROM nvidia/cuda:12.4.0-runtime-ubuntu20.04
 COPY --from=builder /opt/python3.10 /opt/python3.10
 COPY --from=builder /opt/nginx /opt/nginx
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libav* /usr/lib/x86_64-linux-gnu/
-COPY --from=builder /usr/bin/ffmpeg /usr/bin/ffmpeg
-COPY --from=builder /usr/share/ffmpeg /usr/share/ffmpeg
-
-# More dependencies
-RUN apt-get update && apt-get install -y libpostproc-dev && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
 # Set up Python symlinks
 RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
