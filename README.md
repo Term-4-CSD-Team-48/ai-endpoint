@@ -4,7 +4,11 @@
 
 ### Running the server
 
-This server has been containerized and is available for pulling with
+If you are on linux, run
+
+./serve.sh
+
+If you are on windows, you will not be able to run the server directly. You will need to build the image directly and run it in a container. The image is already available for pulling with the below command
 
 docker pull public.ecr.aws/l1g2c1s4/50.001:ai
 
@@ -38,9 +42,13 @@ ffmpeg -i input.mp4 -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v
 
 ### Changing the AI server's port
 
-Not possible unless you reconfigure nginx and you'd need to run docker build which takes a lot of time.
+Not possible if you're on windows as you need to reconfigure nginx and you'd need to run docker build which takes a lot of time.
 
 ## Issues
+
+### AI server not being able to update API when object is not in screen
+
+This is an issue related to windows. The server is developed to natively run on linux unfortunately as we intended it to run on an AWS EC2 instance (cloud server). This is because the AI is very taxing on the GPU and we do not want to bring our desktops with better GPU to school. The reason why the AI server is not able to update the API is because the container that the server is running inside on is has its own network bridge that obfuscates the original IP of the request. As such the AI is unable to extract the API's IP address for future reference and will not be able to talk with the API. That being said, strangely it's able to return responses so there should be a way to fix this but I do not have the time and I need to prepare for my finals.
 
 ### API receiving 403 responses from POST /prompt and POST /observe
 
