@@ -10,14 +10,19 @@ docker pull public.ecr.aws/l1g2c1s4/50.001:ai
 
 The server should be run with
 
-docker run --gpus all -p 8080:8080 -p 1935:1935 public.ecr.aws/l1g2c1s4/50.001:ai
+docker run --gpus all -p 8080:8080 -p 1935:1935 -e API_PORT=8000 public.ecr.aws/l1g2c1s4/50.001:ai
 
-This server listens on ports 1935 RTMP and 8080 HTTP and uses GPU. If your machine
-has no GPU the HTTP server will crash. The AI server needs to be on 8080 for the API to interact with it.
+This server uses GPU, listens on ports 8080 HTTP and 1935 RTMP. If your machine
+has no GPU the HTTP server will crash.
+
+The server will think that the API_PORT is located at 8000 through the -e flag but you have to change it if you're hosting the API on a different port. There's no need to tell
+the AI server where the API's ip as it will just take the ip address of the last GET /observe request.
 
 ### Streaming the livefeed to the AI server for processing
 
-First obtain the video device names on your machine with
+You can stream to the AI server with a camera (1) or a file (2). The steps assume that the AI server is hosted on same machine so 127.0.0.1. It might run on a separate machine on the same network too like 192.168.1.6 for example that's fine too. You'll need to install ffmpeg and add it to PATH.
+
+1. To stream using your camera follow these steps first.
 
 ffmpeg -list_devices true -f dshow -i dummy
 
@@ -28,16 +33,15 @@ Run this command to start streaming to the RTMP server.
 
 ffmpeg -f dshow -rtbufsize 100M -pixel_format yuyv422 -i video="Integrated Camera" -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
 
-I'm assuming that the AI server is being hosted on the same machine as the streaming machine
-so the IP is 127.0.0.1
+2. Alternatively, you can stream from a file instead like this
+
+ffmpeg -i input.mp4 -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
 
 ## Issues
 
 ### API receiving 403 responses from POST /prompt and POST /observe
 
-The AI will return 403 when the request doesn't come from 192.168.0.0/16 or 10.0.0.0/16 or localhost
-Please ensure your're hosting the API and AI on the same LAN. The alternative is to
-modify the code to not reject requests that are not from the above local addresses.
+The AI will return 403 when the request doesn't come from a local ip address. Please ensure your're hosting the API and AI on the same LAN. The alternative is to modify the code to not reject requests that are not from the above local addresses.
 
 # segment-anything-2 real-time
 

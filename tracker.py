@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import cv2
 import requests
+import os
 
 from sam2.build_sam import build_sam2_camera_predictor
 
@@ -23,7 +24,7 @@ class Tracker:
         self.labels = np.array([1], dtype=np.int32)
         self.changed_points = False
         self._observer_ip = ""
-        self._observer_port = ""
+        self._observer_port = os.environ.get("API_PORT", "8000")
         self._object_on_screen = True
 
     def prompt_first_frame(self, frame):
