@@ -83,7 +83,7 @@ observer_id = None
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    print(f"Received request at /ping from {request.headers.get('X-Forwarded-For', request.remote_addr)}")
+    print(f"Received request at /ping from {request.headers.get('X-Real-IP', request.remote_addr)}")
     return "healthy" if torch.cuda.is_available() and tracker else "unhealthy"
 
 
@@ -92,7 +92,7 @@ def prompt():
     global tracker
     print(f"Received request at /prompt")
     data = request.get_json()  # Extract JSON data from the request
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    client_ip = request.headers.get('X-Real-IP', request.remote_addr)
     print(f"Received request at /prompt from {client_ip} with {data}")
     if ',' in client_ip:  # If there are multiple IPs, take the first one
         client_ip = client_ip.split(',')[0].strip()
@@ -127,7 +127,7 @@ def auth_request():
 def observe():
     global observer_id
     print(f"Received request at /observe")
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    client_ip = request.headers.get('X-Real-IP', request.remote_addr)
     print(f"Received request at /observe from {client_ip}")
     if ',' in client_ip:  # If there are multiple IPs, take the first one
         client_ip = client_ip.split(',')[0].strip()
