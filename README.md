@@ -17,7 +17,7 @@ has no GPU the HTTP server will crash. The AI server needs to be on 8080 for the
 
 ### Streaming the livefeed to the AI server for processing
 
-You can stream to the AI server with a camera (1) or a file (2). The steps assume that the AI server is hosted on same machine so 127.0.0.1.
+You can stream to the AI server with a camera (1) or a file (2). The steps assume that the AI server is hosted on same machine so 127.0.0.1. It might run on a separate machine on the same network too like 192.168.1.6 for example that's fine too.
 
 1. To stream using your camera follow these steps first.
 
