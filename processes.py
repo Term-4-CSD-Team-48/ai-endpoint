@@ -5,6 +5,7 @@ import subprocess
 class RGBFramesToHLSProcess:
     def __init__(self):
         HLS_DIR = "/mnt/hls"
+        os.makedirs('/mnt/hls', exist_ok=True)
         M3U8_FILE = os.path.join(HLS_DIR, "stream.m3u8")
         process_command = [
             'ffmpeg',
