@@ -17,7 +17,9 @@ has no GPU the HTTP server will crash. The AI server needs to be on 8080 for the
 
 ### Streaming the livefeed to the AI server for processing
 
-First obtain the video device names on your machine with
+You can stream to the AI server with a camera (1) or a file (2). The steps assume that the AI server is hosted on same machine so 127.0.0.1.
+
+1. To stream using your camera follow these steps first.
 
 ffmpeg -list_devices true -f dshow -i dummy
 
@@ -28,16 +30,15 @@ Run this command to start streaming to the RTMP server.
 
 ffmpeg -f dshow -rtbufsize 100M -pixel_format yuyv422 -i video="Integrated Camera" -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
 
-I'm assuming that the AI server is being hosted on the same machine as the streaming machine
-so the IP is 127.0.0.1
+2. Alternatively, you can stream from a file instead like this
+
+ffmpeg -i input.mp4 -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
 
 ## Issues
 
 ### API receiving 403 responses from POST /prompt and POST /observe
 
-The AI will return 403 when the request doesn't come from 192.168.0.0/16 or 10.0.0.0/16 or localhost
-Please ensure your're hosting the API and AI on the same LAN. The alternative is to
-modify the code to not reject requests that are not from the above local addresses.
+The AI will return 403 when the request doesn't come from a local ip address. Please ensure your're hosting the API and AI on the same LAN. The alternative is to modify the code to not reject requests that are not from the above local addresses.
 
 # segment-anything-2 real-time
 
