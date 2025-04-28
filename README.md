@@ -15,8 +15,7 @@ docker run --gpus all -p 8080:8080 -p 1935:1935 -e API_PORT=8000 public.ecr.aws/
 This server uses GPU, listens on ports 8080 HTTP and 1935 RTMP. If your machine
 has no GPU the HTTP server will crash.
 
-The server will think that the API_PORT is located at 8000 through the -e flag but you have to change it if you're hosting the API on a different port. There's no need to tell
-the AI server where the API's ip as it will just take the ip address of the last GET /observe request.
+The server will think that the API_PORT is located at 8000 through the -e API_PORT=8000 option but you have to change it if you're hosting the API on a different port. There's no need to tell the AI server the API's ip as it will just take the ip address of the last GET /observe request.
 
 ### Streaming the livefeed to the AI server for processing
 
