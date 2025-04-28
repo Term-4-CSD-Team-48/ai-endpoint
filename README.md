@@ -36,6 +36,10 @@ ffmpeg -f dshow -rtbufsize 100M -pixel_format yuyv422 -i video="Integrated Camer
 
 ffmpeg -i input.mp4 -c:v libx264 -s 640x360 -pix_fmt yuv420p -bufsize 1200k -b:v 600k -preset ultrafast -tune zerolatency -f flv rtmp://127.0.0.1/live/stream
 
+### Changing the AI server's port
+
+Not possible unless you reconfigure nginx and you'd need to run docker build which takes a lot of time.
+
 ## Issues
 
 ### API receiving 403 responses from POST /prompt and POST /observe
