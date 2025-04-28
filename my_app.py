@@ -68,8 +68,10 @@ def create_app():
             except Exception as e:
                 print(f"Exception occured in thread: {e}. Restarting thread...")
             finally:
-                streamer.release()
-                process.release()
+                if streamer is not None:
+                    streamer.release()
+                if process is not None:
+                    process.release()
 
     thread = threading.Thread(target=rtmp_to_ai_to_hls_thread, daemon=True)
     thread.start()

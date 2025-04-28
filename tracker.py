@@ -79,7 +79,11 @@ class Tracker:
             self._object_on_screen = object_on_screen
             data = {"objectOnScreen": object_on_screen}
             if self.observer_ip is not None and len(self.observer_ip) > 0:
-                requests.post(f"http://{self.observer_ip}:{self.observer_port}/ai/on-update", json=data)
+                url = f"http://{self.observer_ip}:{self.observer_port}/ai/on-update"
+                try:
+                    requests.post(url, json=data)
+                except Exception as e:
+                    print(f"WARNING: an error occured in sending request to {url}")
 
     def get_points(self):
         return self._points
