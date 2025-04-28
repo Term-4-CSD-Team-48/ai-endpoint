@@ -98,6 +98,9 @@ RUN ln -sf /opt/python3.10/bin/python3.10 /usr/local/bin/python3 && \
     pip --version && \
     pip3 --version 
 
+# Python runs in unbuffered mode
+ENV PYTHONUNBUFFERED=1
+
 # Set up nginx symlink
 ENV PATH="/opt/nginx/sbin:${PATH}"
 RUN nginx -v
