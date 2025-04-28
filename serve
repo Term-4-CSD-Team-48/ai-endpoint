@@ -47,6 +47,8 @@ def start_server():
                                  '--timeout', str(model_server_timeout),
                                  '-k', 'sync',
                                  '-b', 'unix:/tmp/gunicorn.sock',
+                                 '--capture-output',  # Capture print statements
+                                 '--log-level', 'debug',
                                  '-w', str(model_server_workers),
                                  'wsgi:app'])
 
