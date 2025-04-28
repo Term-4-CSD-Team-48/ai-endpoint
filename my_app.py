@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 import threading
-import cv2
-import subprocess
 from flask import Flask, request, jsonify
 import os
 import time
