@@ -6,6 +6,7 @@ import subprocess
 from flask import Flask, request, jsonify
 import os
 import time
+import ipaddress
 
 from streamer import Streamer
 from tracker import Tracker, BGRToTrackerAdapter
@@ -95,7 +96,7 @@ def prompt():
     if ',' in client_ip:  # If there are multiple IPs, take the first one
         client_ip = client_ip.split(',')[0].strip()
     print(f"Received request at /prompt from {client_ip} with {data}")
-    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168") and not client_ip.startswith("127.0.0.1"):
+    if not ipaddress.ip_address(client_ip).is_private:
         return "outsiders not allowed", 403
     if not data['x'] or not data['y']:
         return "invalid JSON", 400  # Handle case where JSON is missing
@@ -127,11 +128,11 @@ def observe():
     global observer_id
     print(f"Received request at /observe")
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    print(f"Received request at /observe from {client_ip}")
     if ',' in client_ip:  # If there are multiple IPs, take the first one
         client_ip = client_ip.split(',')[0].strip()
     client_port = request.headers.get('Remote-Port')
-    print(f"Received request at /observe from {client_ip}")
-    if not client_ip.startswith("10.0") and not client_ip.startswith("192.168") and not client_ip.startswith("127.0.0.1"):
+    if not ipaddress.ip_address(client_ip).is_private:
         return "outsiders not allowed", 403
     data = request.get_json()
     if data['jSessionId'] is None:
